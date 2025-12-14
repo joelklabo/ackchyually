@@ -40,6 +40,7 @@ func BuiltinScenarios() []Scenario {
 		curlInvalidURLScenario(),
 		goEnvWriteKeyValueScenario(),
 		goEnvWriteUnknownVarScenario(),
+		goEnvWriteGopathRelativeScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
@@ -769,6 +770,21 @@ func goEnvWriteUnknownVarScenario() Scenario {
 		Setup:       func(_ *Env) error { return nil },
 		Seed:        Command{Args: []string{"env", "-w", "GOPATH=/tmp/ackchyually-eval-gopath"}},
 		Bad:         Command{Args: []string{"env", "-w", "FOO=bar"}},
+		Help:        Command{Args: []string{"help", "env"}},
+		Expect: Expectation{
+			FinalExitCode: 0,
+		},
+	}
+}
+
+func goEnvWriteGopathRelativeScenario() Scenario {
+	return Scenario{
+		Name:        "go_env_write_gopath_relative",
+		Description: "Run go env -w GOPATH with a relative path value (seeded vs unseeded).",
+		Tool:        "go",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"env", "-w", "GOPATH=/tmp/ackchyually-eval-gopath"}},
+		Bad:         Command{Args: []string{"env", "-w", "GOPATH=."}},
 		Help:        Command{Args: []string{"help", "env"}},
 		Expect: Expectation{
 			FinalExitCode: 0,

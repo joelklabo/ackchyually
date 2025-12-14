@@ -119,6 +119,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "not an integer") ||
 		execx.ContainsFold(t, "key=value") ||
 		execx.ContainsFold(t, "unknown go command variable") ||
+		execx.ContainsFold(t, "must be absolute path") ||
 		execx.ContainsFold(t, "ambiguous argument") ||
 		(execx.ContainsFold(t, "pathspec") && execx.ContainsFold(t, "did not match")) ||
 		execx.ContainsFold(t, "wrong number of arguments") ||
