@@ -19,6 +19,9 @@ cover:
 lint:
   golangci-lint run
 
+bench:
+  go test ./... -run '^$' -bench . -benchmem -count=1
+
 build:
   go build ./cmd/ackchyually
 
@@ -27,4 +30,3 @@ install-local:
 
 site-sync-install:
   cp scripts/install.sh site/install.sh
-

@@ -74,13 +74,23 @@ ackchyually export --format md --tool xcodebuild
 - Export is stricter (normalizes paths, redacts more).
 - Auto-exec is off by default.
 
+### Optional auto-exec (off by default)
+If you want ackchyually to automatically re-run the top known-success command on “usage-ish” failures (interactive TTY only):
+
+```sh
+export ACKCHYUALLY_AUTO_EXEC=known_success
+```
+
 ## Development
+
 ```sh
 just test
 just test-pty
 just lint
 ```
 
+Maintainers: see `MAINTAINERS.md`.
+
 ## License
+
 MIT
-# ackchyually
