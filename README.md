@@ -57,7 +57,7 @@ ackchyually export --format md --tool xcodebuild
 
 ## How it works
 - Transparent PATH shims (busybox-style symlinks) so you keep typing `git ...` normally.
-- Logs invocations to a local SQLite DB (redacted) keyed by repo/cwd context.
+- Logs invocations to a local SQLite DB (redacted) keyed by repo/cwd context (`~/.local/share/ackchyually/ackchyually.sqlite`).
 - On “usage-ish” failures, prints one known-good command that worked before in the same context.
 
 ## Commands
