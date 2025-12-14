@@ -10,10 +10,12 @@ func BuiltinScenarios() []Scenario {
 	return []Scenario{
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
+		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
+		goUnknownCommandScenario(),
 	}
 }
 
@@ -117,6 +119,39 @@ func gitDiffNameOnlyScenario() Scenario {
 	}
 }
 
+func gitCommitMissingValueScenario() Scenario {
+	return Scenario{
+		Name:        "git_commit_missing_value",
+		Description: "Commit with a missing -m value (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"commit", "--allow-empty", "-m", "seed from eval"}},
+		Bad:  Command{Args: []string{"commit", "-m"}},
+		Help: Command{Args: []string{"commit", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "seed from eval",
+		},
+	}
+}
+
 func goTestCountScenario() Scenario {
 	return Scenario{
 		Name:        "go_test_count_flag",
@@ -157,6 +192,22 @@ func goTestUnknownFlagNoiseScenario() Scenario {
 		{Args: []string{"env", "GOPATH"}},
 	}
 	return s
+}
+
+func goUnknownCommandScenario() Scenario {
+	return Scenario{
+		Name:        "go_unknown_command",
+		Description: "Run go with an unknown subcommand (seeded vs unseeded).",
+		Tool:        "go",
+		Setup:       setupGoTestModule,
+		Seed:        Command{Args: []string{"test", "./...", "-count=1"}},
+		Bad:         Command{Args: []string{"tset"}},
+		Help:        Command{Args: []string{"help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "example.com/ackchyually-eval",
+		},
+	}
 }
 
 func setupGoTestModule(env *Env) error {
