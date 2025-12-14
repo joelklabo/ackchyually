@@ -12,7 +12,7 @@
 ![License](https://img.shields.io/github/license/joelklabo/ackchyually)
 ![Go Report Card](https://goreportcard.com/badge/github.com/joelklabo/ackchyually)
 ![PkgGoDev](https://pkg.go.dev/badge/github.com/joelklabo/ackchyually.svg)
-![Codecov](https://img.shields.io/codecov/c/github/joelklabo/ackchyually)
+![Coverage](https://img.shields.io/endpoint?url=https://ackchyually.sh/coverage.json)
 ![Downloads](https://img.shields.io/github/downloads/joelklabo/ackchyually/total)
 
 **ackchyually** — the “ackchyually…” friend for your CLI. Remembers what worked (per repo). Suggests the right command when you get the details wrong.

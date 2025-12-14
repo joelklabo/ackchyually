@@ -3,9 +3,7 @@ name: Pages
 on:
   push:
     branches: [ main ]
-    paths:
-      - "site/**"
-      - "scripts/install.sh"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,6 +22,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+          check-latest: true
+          cache: true
+
+      - name: Generate coverage badge (site/coverage.json)
+        run: |
+          go test ./... -coverprofile=coverage.out -covermode=atomic
+          pct="$(go tool cover -func=coverage.out | awk '/^total:/{print $3}')"
+          pct_num="${pct%\%}"
+          color="$(awk -v c="$pct_num" 'BEGIN{c+=0; if(c>=90)print\"brightgreen\"; else if(c>=80)print\"green\"; else if(c>=70)print\"yellowgreen\"; else if(c>=60)print\"yellow\"; else print\"red\";}')"
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s","color":"%s"}\n' "$pct" "$color" > site/coverage.json
       - name: Sync install script into site/
         run: cp scripts/install.sh site/install.sh
       - uses: actions/configure-pages@v5
