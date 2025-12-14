@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "test: go test ./...",
+      "type": "shell",
+      "command": "go test ./...",
+      "problemMatcher": ["$go"],
+      "group": "test"
+    },
+    {
+      "label": "test: PTY (TestPTY)",
+      "type": "shell",
+      "command": "go test ./... -run TestPTY -count=1",
+      "problemMatcher": ["$go"],
+      "group": "test"
+    },
+    {
+      "label": "lint: golangci-lint",
+      "type": "shell",
+      "command": "golangci-lint run",
+      "problemMatcher": []
+    },
+    {
+      "label": "fmt: gofmt",
+      "type": "shell",
+      "command": "gofmt -w .",
+      "problemMatcher": []
+    },
+    {
+      "label": "build: ackchyually",
+      "type": "shell",
+      "command": "go build ./cmd/ackchyually",
+      "problemMatcher": ["$go"],
+      "group": "build"
+    }
+  ]
+}
+

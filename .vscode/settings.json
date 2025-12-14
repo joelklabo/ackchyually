@@ -1,0 +1,28 @@
+{
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "files.exclude": {
+    "**/.beads/*.db": true,
+    "**/.beads/*.db-*": true,
+    "**/.beads/bd.sock": true,
+    "**/.beads/daemon.*": true,
+    "**/.beads/.local_version": true,
+    "**/.beads/*.left.jsonl": true,
+    "**/.beads/*.right.jsonl": true,
+    "**/.beads/*.base.jsonl": true
+  },
+  "search.exclude": {
+    "**/.beads/*.db": true,
+    "**/.beads/*.db-*": true
+  },
+  "files.watcherExclude": {
+    "**/.beads/*.db": true,
+    "**/.beads/*.db-*": true,
+    "**/.beads/bd.sock": true,
+    "**/.beads/daemon.*": true
+  }
+}
+

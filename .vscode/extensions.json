@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "golang.go",
+    "github.vscode-github-actions",
+    "davidanson.vscode-markdownlint",
+    "timonwong.shellcheck",
+    "redhat.vscode-yaml"
+  ]
+}
+
