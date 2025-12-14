@@ -60,10 +60,10 @@ func shimInstall(tools []string) int {
 	case found == 0:
 		fmt.Printf("%sOK%s: shim dir is first in PATH\n", green, reset)
 	case found == -1:
-		fmt.Printf("%s%sRequired%s: put shims first in PATH\n", yellow, bold, reset)
+		fmt.Printf("%s%sRequired%s: add shim dir to PATH\n", yellow, bold, reset)
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 	case found > 0:
-		fmt.Printf("%s%sRequired%s: shim dir must be first in PATH (currently index=%d)\n", yellow, bold, reset, found)
+		fmt.Printf("%s%sRecommended%s: put shim dir first in PATH (currently index=%d)\n", yellow, bold, reset, found)
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 	}
 	fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
@@ -74,7 +74,7 @@ func shimInstall(tools []string) int {
 	fmt.Printf("  which %s\n", tools[0])
 	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0])
 	fmt.Println()
-	fmt.Printf("%sIf it prints something else, your shim dir isn't first in PATH.%s\n", dim, reset)
+	fmt.Printf("%sIf it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.%s\n", dim, tools[0], reset)
 
 	return 0
 }

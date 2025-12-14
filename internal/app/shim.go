@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/term"
+
 	"github.com/joelklabo/ackchyually/internal/contextkey"
 	"github.com/joelklabo/ackchyually/internal/execx"
 	"github.com/joelklabo/ackchyually/internal/redact"
@@ -404,8 +406,13 @@ func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 		if err != nil {
 			return err
 		}
+		if len(cands) == 0 {
+			suggestNoKnownGood(tool)
+			return nil
+		}
 		argv := pickKnownGood(cands, argvSafe)
 		if len(argv) == 0 {
+			suggestNoKnownGood(tool)
 			return nil
 		}
 		fmt.Fprintln(os.Stderr, "ackchyually: this worked before here:")
@@ -414,6 +421,14 @@ func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 	}); err != nil {
 		_ = err // best-effort
 	}
+}
+
+func suggestNoKnownGood(tool string) {
+	if !term.IsTerminal(int(os.Stderr.Fd())) {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "ackchyually: no known-good %s command saved for this repo yet\n", tool)
+	fmt.Fprintf(os.Stderr, "ackchyually: run one successful %s command, then retry\n", tool)
 }
 
 func autoExecKnownSuccessEnabled() bool {
