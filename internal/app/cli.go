@@ -24,7 +24,7 @@ func RunCLI(args []string) int {
 		fmt.Println("ackchyually dev")
 		return 0
 	default:
-		usage()
+		printUnknownCommand(args[0], []string{"shim", "best", "tag", "export", "version"})
 		return 2
 	}
 }
@@ -64,7 +64,7 @@ func shimCmd(args []string) int {
 	case "doctor":
 		return shimDoctor()
 	default:
-		usage()
+		printUnknownSubcommand("shim", args[0], []string{"install", "list", "enable", "uninstall", "doctor"})
 		return 2
 	}
 }
@@ -107,7 +107,7 @@ func tagCmd(args []string) int {
 	case "run":
 		return tagRun(args[1:])
 	default:
-		usage()
+		printUnknownSubcommand("tag", args[0], []string{"add", "run"})
 		return 2
 	}
 }
