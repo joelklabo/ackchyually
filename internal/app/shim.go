@@ -135,7 +135,8 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "cannot be used together") ||
 		(execx.ContainsFold(t, "needs the paths") && execx.ContainsFold(t, "check out")) ||
 		execx.ContainsFold(t, "needed a single revision") ||
-		execx.ContainsFold(t, "missing required")
+		execx.ContainsFold(t, "missing required") ||
+		execx.ContainsFold(t, "missing colon separator")
 }
 
 func pickKnownGood(cands []store.SuccessCandidate, argvSafe []string) []string {

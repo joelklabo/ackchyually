@@ -14,6 +14,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogSubjectConfusingNoiseScenario(),
 		gitLogInvalidCountScenario(),
 		gitLogUnknownDateFormatScenario(),
+		gitLogDateFormatMissingColonScenario(),
 		gitLogInvalidDecorateOptionScenario(),
 		gitLogInvalidColorValueScenario(),
 		gitLogInvalidPrettyFormatScenario(),
@@ -129,6 +130,16 @@ func gitLogUnknownDateFormatScenario() Scenario {
 	s.Description = "Run git log with an unknown --date format value (seeded vs unseeded)."
 	s.Seed = Command{Args: []string{"log", "-1", "--date=short", "--pretty=%s"}}
 	s.Bad = Command{Args: []string{"log", "-1", "--date=bananas", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogDateFormatMissingColonScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_date_format_missing_colon"
+	s.Description = "Run git log with --date=format missing a colon separator (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--date=format:%Y-%m-%d", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--date=format", "--pretty=%s"}}
 	s.Help = Command{Args: []string{"log", "-h"}}
 	return s
 }
