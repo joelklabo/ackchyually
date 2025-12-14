@@ -112,6 +112,7 @@ func isUsageish(code int, res execx.Result) bool {
 		(execx.ContainsFold(t, "unrecognized --") && execx.ContainsFold(t, " argument")) ||
 		execx.ContainsFold(t, "invalid option") ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
+		execx.ContainsFold(t, "url rejected") ||
 		execx.ContainsFold(t, "invalid regexp") ||
 		execx.ContainsFold(t, "not an integer") ||
 		execx.ContainsFold(t, "key=value") ||
@@ -127,6 +128,9 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "valid values") ||
 		execx.ContainsFold(t, "could not find key") ||
 		execx.ContainsFold(t, "unknown change class") ||
+		(execx.ContainsFold(t, "cannot do") && execx.ContainsFold(t, "reset") && execx.ContainsFold(t, "with paths")) ||
+		execx.ContainsFold(t, "cannot be used together") ||
+		(execx.ContainsFold(t, "needs the paths") && execx.ContainsFold(t, "check out")) ||
 		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required")
 }
