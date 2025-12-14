@@ -414,9 +414,12 @@ func matchesHelpInvocation(tool string, helpArgs []string, argv []string) bool {
 }
 
 func isHelpInvocation(argv []string) bool {
+	if len(argv) > 1 && argv[1] == "help" {
+		return true
+	}
 	for _, a := range argv[1:] {
 		switch a {
-		case "-h", "--help", "-help", "help":
+		case "-h", "--help", "-help":
 			return true
 		}
 	}
