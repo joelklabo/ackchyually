@@ -74,13 +74,14 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	_ = tty.Close()
 
 	waitContains(t, &buf, "PROMPTLY_START")
 	waitContains(t, &buf, "TTY stdin=true stdout=true")
 	waitContains(t, &buf, "PROMPT enter y:")
 
-	must(t, pty.Setsize(ptmx, &pty.Winsize{Rows: 40, Cols: 100}))
+	// Resize the controlling terminal for ackchyually (the slave side `tty`) so
+	// term.GetSize inside the shim reliably observes the updated size on all platforms.
+	must(t, pty.Setsize(tty, &pty.Winsize{Rows: 40, Cols: 100}))
 	must(t, cmd.Process.Signal(syscall.SIGWINCH))
 	time.Sleep(50 * time.Millisecond)
 

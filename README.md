@@ -82,6 +82,7 @@ export ACKCHYUALLY_AUTO_EXEC=known_success
 ```
 
 ## Development
+
 ```sh
 just test
 just test-pty
@@ -91,5 +92,5 @@ just lint
 Maintainers: see `MAINTAINERS.md`.
 
 ## License
+
 MIT
-# ackchyually
