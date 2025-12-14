@@ -94,6 +94,12 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "flag provided but not defined") ||
 		execx.ContainsFold(t, "unknown flag") ||
 		execx.ContainsFold(t, "unknown shorthand flag") ||
+		execx.ContainsFold(t, "unknown command") ||
+		execx.ContainsFold(t, "unknown subcommand") ||
+		execx.ContainsFold(t, "for usage") ||
+		execx.ContainsFold(t, "requires a value") ||
+		execx.ContainsFold(t, "requires an argument") ||
+		execx.ContainsFold(t, "requires at least") ||
 		execx.ContainsFold(t, "unknown option") ||
 		execx.ContainsFold(t, "unrecognized option") ||
 		execx.ContainsFold(t, "unrecognized argument") ||
@@ -106,10 +112,7 @@ func pickKnownGood(cands []store.SuccessCandidate, argvSafe []string) []string {
 		return nil
 	}
 
-	want := make(map[string]struct{}, len(argvSafe))
-	for _, a := range argvSafe[1:] { // exclude tool name
-		want[strings.ToLower(a)] = struct{}{}
-	}
+	want := wantTokens(argvSafe)
 
 	var best []string
 	bestScore := 0
@@ -143,14 +146,117 @@ func pickKnownGood(cands []store.SuccessCandidate, argvSafe []string) []string {
 	return best
 }
 
-func countArgMatches(want map[string]struct{}, argv []string) int {
+func wantTokens(argvSafe []string) []string {
+	seen := make(map[string]struct{}, len(argvSafe))
+	out := make([]string, 0, len(argvSafe))
+	for _, a := range argvSafe[1:] { // exclude tool name
+		a = strings.ToLower(a)
+		if a == "" {
+			continue
+		}
+		if _, ok := seen[a]; ok {
+			continue
+		}
+		seen[a] = struct{}{}
+		out = append(out, a)
+	}
+	return out
+}
+
+func countArgMatches(want []string, argv []string) int {
 	n := 0
 	for _, a := range argv[1:] { // exclude tool name
-		if _, ok := want[strings.ToLower(a)]; ok {
+		aLower := strings.ToLower(a)
+		if matchesAnyToken(want, aLower) {
 			n++
 		}
 	}
 	return n
+}
+
+func matchesAnyToken(tokens []string, argLower string) bool {
+	for _, t := range tokens {
+		if argLower == t || fuzzyTokenMatch(argLower, t) {
+			return true
+		}
+	}
+	return false
+}
+
+func fuzzyTokenMatch(a, b string) bool {
+	// Limit fuzzy matching to short "word-like" tokens to avoid matching paths/flags.
+	if !isWordToken(a) || !isWordToken(b) {
+		return false
+	}
+	return isOneEditOrTransposition(a, b)
+}
+
+func isWordToken(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func isOneEditOrTransposition(a, b string) bool {
+	if a == b {
+		return true
+	}
+	la, lb := len(a), len(b)
+	if la == lb {
+		// Single replacement or adjacent transposition.
+		mismatch := make([]int, 0, 2)
+		for i := 0; i < la; i++ {
+			if a[i] != b[i] {
+				mismatch = append(mismatch, i)
+				if len(mismatch) > 2 {
+					return false
+				}
+			}
+		}
+		switch len(mismatch) {
+		case 1:
+			return true
+		case 2:
+			i, j := mismatch[0], mismatch[1]
+			return j == i+1 && a[i] == b[j] && a[j] == b[i]
+		default:
+			return false
+		}
+	}
+
+	// Single insertion/deletion.
+	if la+1 == lb {
+		return isOneInsertAway(a, b) // a shorter
+	}
+	if lb+1 == la {
+		return isOneInsertAway(b, a) // b shorter
+	}
+	return false
+}
+
+func isOneInsertAway(shorter, longer string) bool {
+	i, j := 0, 0
+	used := false
+	for i < len(shorter) && j < len(longer) {
+		if shorter[i] == longer[j] {
+			i++
+			j++
+			continue
+		}
+		if used {
+			return false
+		}
+		used = true
+		j++ // skip one char in longer
+	}
+	return true
 }
 
 func commonPrefixLen(a, b []string) int {
