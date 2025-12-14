@@ -25,6 +25,7 @@ func BuiltinScenarios() []Scenario {
 		gitDiffNameOnlyScenario(),
 		curlUnknownOptionScenario(),
 		curlMissingOptionValueScenario(),
+		goEnvWriteKeyValueScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
@@ -501,6 +502,21 @@ func goTestCountScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "example.com/ackchyually-eval",
+		},
+	}
+}
+
+func goEnvWriteKeyValueScenario() Scenario {
+	return Scenario{
+		Name:        "go_env_write_key_value",
+		Description: "Run go env -w with a missing KEY=VALUE (seeded vs unseeded).",
+		Tool:        "go",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"env", "-w", "GOPATH=/tmp/ackchyually-eval-gopath"}},
+		Bad:         Command{Args: []string{"env", "-w", "GOPATH"}},
+		Help:        Command{Args: []string{"help", "env"}},
+		Expect: Expectation{
+			FinalExitCode: 0,
 		},
 	}
 }

@@ -111,6 +111,7 @@ func isUsageish(code int, res execx.Result) bool {
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
 		execx.ContainsFold(t, "invalid regexp") ||
 		execx.ContainsFold(t, "not an integer") ||
+		execx.ContainsFold(t, "key=value") ||
 		execx.ContainsFold(t, "ambiguous argument") ||
 		(execx.ContainsFold(t, "pathspec") && execx.ContainsFold(t, "did not match")) ||
 		execx.ContainsFold(t, "wrong number of arguments") ||
