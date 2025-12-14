@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/creack/pty"
+	"golang.org/x/term"
 )
 
 func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
@@ -81,9 +82,11 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 
 	// Resize the controlling terminal for ackchyually (the slave side `tty`) so
 	// term.GetSize inside the shim reliably observes the updated size on all platforms.
+	must(t, pty.Setsize(ptmx, &pty.Winsize{Rows: 40, Cols: 100}))
 	must(t, pty.Setsize(tty, &pty.Winsize{Rows: 40, Cols: 100}))
 	must(t, cmd.Process.Signal(syscall.SIGWINCH))
-	time.Sleep(50 * time.Millisecond)
+	waitForSize(t, tty, 40, 100)
+	time.Sleep(200 * time.Millisecond)
 
 	if _, err := ptmx.Write([]byte("y\n")); err != nil {
 		t.Fatalf("ptmx.Write: %v", err)
@@ -101,6 +104,21 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 	case <-done:
 	case <-time.After(1 * time.Second):
 	}
+}
+
+func waitForSize(t *testing.T, f *os.File, rows, cols uint16) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		gotCols, gotRows, err := term.GetSize(int(f.Fd()))
+		if err == nil && gotRows == int(rows) && gotCols == int(cols) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	gotCols, gotRows, err := term.GetSize(int(f.Fd()))
+	t.Fatalf("timeout waiting for size rows=%d cols=%d (got rows=%d cols=%d, err=%v)", rows, cols, gotRows, gotCols, err)
 }
 
 func TestPipes_NonInteractiveUsesPipes(t *testing.T) {
