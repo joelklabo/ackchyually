@@ -26,6 +26,7 @@ func BuiltinScenarios() []Scenario {
 		curlUnknownOptionScenario(),
 		curlMissingOptionValueScenario(),
 		goEnvWriteKeyValueScenario(),
+		goEnvWriteUnknownVarScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
@@ -514,6 +515,21 @@ func goEnvWriteKeyValueScenario() Scenario {
 		Setup:       func(_ *Env) error { return nil },
 		Seed:        Command{Args: []string{"env", "-w", "GOPATH=/tmp/ackchyually-eval-gopath"}},
 		Bad:         Command{Args: []string{"env", "-w", "GOPATH"}},
+		Help:        Command{Args: []string{"help", "env"}},
+		Expect: Expectation{
+			FinalExitCode: 0,
+		},
+	}
+}
+
+func goEnvWriteUnknownVarScenario() Scenario {
+	return Scenario{
+		Name:        "go_env_write_unknown_var",
+		Description: "Run go env -w with an unknown go command variable (seeded vs unseeded).",
+		Tool:        "go",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"env", "-w", "GOPATH=/tmp/ackchyually-eval-gopath"}},
+		Bad:         Command{Args: []string{"env", "-w", "FOO=bar"}},
 		Help:        Command{Args: []string{"help", "env"}},
 		Expect: Expectation{
 			FinalExitCode: 0,
