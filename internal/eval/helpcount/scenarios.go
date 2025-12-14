@@ -32,6 +32,7 @@ func BuiltinScenarios() []Scenario {
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
 		gitDiffInvalidDiffAlgorithmScenario(),
+		gitDiffInvalidStatValueScenario(),
 		curlUnknownOptionScenario(),
 		curlMissingOptionValueScenario(),
 		curlInvalidURLScenario(),
@@ -496,6 +497,16 @@ func gitDiffInvalidDiffAlgorithmScenario() Scenario {
 	s.Description = "Run git diff with an invalid --diff-algorithm value (seeded vs unseeded)."
 	s.Seed = Command{Args: []string{"diff", "--diff-algorithm=myers", "--name-only"}}
 	s.Bad = Command{Args: []string{"diff", "--diff-algorithm=banana", "--name-only"}}
+	s.Help = Command{Args: []string{"diff", "-h"}}
+	return s
+}
+
+func gitDiffInvalidStatValueScenario() Scenario {
+	s := gitDiffNameOnlyScenario()
+	s.Name = "git_diff_invalid_stat_value"
+	s.Description = "Run git diff with an invalid --stat value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"diff", "--stat"}}
+	s.Bad = Command{Args: []string{"diff", "--stat=foo"}}
 	s.Help = Command{Args: []string{"diff", "-h"}}
 	return s
 }
