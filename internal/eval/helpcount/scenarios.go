@@ -10,12 +10,16 @@ func BuiltinScenarios() []Scenario {
 	return []Scenario{
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
+		gitLogSubjectConfusingNoiseScenario(),
+		gitLogInvalidCountScenario(),
+		gitRevParseMissingRevisionScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
+		goTestInvalidRunRegexScenario(),
 		goUnknownCommandScenario(),
 		ghVersionTypoScenario(),
 	}
@@ -72,6 +76,68 @@ func gitLogSubjectNoiseScenario() Scenario {
 		{Args: []string{"status"}},
 	}
 	return s
+}
+
+func gitLogSubjectConfusingNoiseScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_subject_confusing_noise"
+	s.Description = "Get last commit subject with a more similar intervening success (seeded vs unseeded)."
+	s.Noise = []Command{
+		{Args: []string{"log", "-1", "--pretty=%h"}},
+	}
+	return s
+}
+
+func gitLogInvalidCountScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_invalid_count"
+	s.Description = "Run git log with a non-integer -n value (seeded vs unseeded)."
+	s.Bad = Command{Args: []string{"log", "-n", "abc", "-1", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitRevParseMissingRevisionScenario() Scenario {
+	return Scenario{
+		Name:        "git_rev_parse_missing_revision",
+		Description: "Run git rev-parse --verify without a revision (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "add", "."); err != nil {
+				return fmt.Errorf("git add: %w", err)
+			}
+			if _, err := env.RunDirect("git", "commit", "-m", "seed", "-q"); err != nil {
+				return fmt.Errorf("git commit: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"rev-parse", "--verify", "--symbolic-full-name", "HEAD"}},
+		Bad:  Command{Args: []string{"rev-parse", "--verify", "--symbolic-full-name"}},
+		Help: Command{Args: []string{"rev-parse", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "refs/heads/main",
+		},
+	}
 }
 
 func gitDiffNameOnlyScenario() Scenario {
@@ -237,6 +303,22 @@ func goTestUnknownFlagNoiseScenario() Scenario {
 		{Args: []string{"env", "GOPATH"}},
 	}
 	return s
+}
+
+func goTestInvalidRunRegexScenario() Scenario {
+	return Scenario{
+		Name:        "go_test_invalid_run_regex",
+		Description: "Run go test with an invalid -run regexp (seeded vs unseeded).",
+		Tool:        "go",
+		Setup:       setupGoTestModule,
+		Seed:        Command{Args: []string{"test", "./...", "-run", "TestOK"}},
+		Bad:         Command{Args: []string{"test", "./...", "-run", "["}},
+		Help:        Command{Args: []string{"help", "testflag"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "example.com/ackchyually-eval",
+		},
+	}
 }
 
 func goUnknownCommandScenario() Scenario {

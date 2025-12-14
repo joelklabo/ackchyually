@@ -105,6 +105,9 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "unrecognized option") ||
 		execx.ContainsFold(t, "unrecognized argument") ||
 		execx.ContainsFold(t, "invalid option") ||
+		execx.ContainsFold(t, "invalid regexp") ||
+		execx.ContainsFold(t, "not an integer") ||
+		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required")
 }
 
@@ -151,15 +154,16 @@ func wantTokens(argvSafe []string) []string {
 	seen := make(map[string]struct{}, len(argvSafe))
 	out := make([]string, 0, len(argvSafe))
 	for _, a := range argvSafe[1:] { // exclude tool name
-		a = strings.ToLower(a)
-		if a == "" {
-			continue
+		for _, t := range tokenVariants(a) {
+			if t == "" {
+				continue
+			}
+			if _, ok := seen[t]; ok {
+				continue
+			}
+			seen[t] = struct{}{}
+			out = append(out, t)
 		}
-		if _, ok := seen[a]; ok {
-			continue
-		}
-		seen[a] = struct{}{}
-		out = append(out, a)
 	}
 	return out
 }
@@ -167,10 +171,17 @@ func wantTokens(argvSafe []string) []string {
 func countArgMatches(want []string, argv []string) int {
 	n := 0
 	for _, a := range argv[1:] { // exclude tool name
-		aLower := strings.ToLower(a)
-		if matchesAnyToken(want, aLower) {
-			n++
+		m := 0
+		for _, t := range tokenVariants(a) {
+			if matchesAnyToken(want, t) {
+				m++
+			}
 		}
+		// Avoid overweighting a single arg that matches in multiple ways.
+		if m > 2 {
+			m = 2
+		}
+		n += m
 	}
 	return n
 }
@@ -185,11 +196,41 @@ func matchesAnyToken(tokens []string, argLower string) bool {
 }
 
 func fuzzyTokenMatch(a, b string) bool {
-	// Limit fuzzy matching to short "word-like" tokens to avoid matching paths/flags.
-	if !isWordToken(a) || !isWordToken(b) {
+	na, oka := normalizeFuzzyToken(a)
+	nb, okb := normalizeFuzzyToken(b)
+	if !oka || !okb {
 		return false
 	}
-	return isOneEditOrTransposition(a, b)
+	// Avoid overly-broad fuzzy matches for very short tokens (-m vs -n, etc.).
+	if len(na) < 3 || len(nb) < 3 {
+		return false
+	}
+	return isOneEditOrTransposition(na, nb)
+}
+
+func tokenVariants(arg string) []string {
+	a := strings.ToLower(arg)
+	out := []string{a}
+	if i := strings.IndexByte(a, '='); i > 0 && i < len(a)-1 {
+		out = append(out, a[:i], a[i+1:])
+	} else if i := strings.IndexByte(a, '='); i > 0 {
+		out = append(out, a[:i])
+	}
+	return out
+}
+
+func normalizeFuzzyToken(s string) (string, bool) {
+	if isWordToken(s) {
+		return s, true
+	}
+	if isFlagToken(s) {
+		n := strings.TrimLeft(s, "-")
+		n = strings.ReplaceAll(n, "-", "")
+		if isWordToken(n) {
+			return n, true
+		}
+	}
+	return "", false
 }
 
 func isWordToken(s string) bool {
@@ -198,6 +239,26 @@ func isWordToken(s string) bool {
 	}
 	for _, r := range s {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func isFlagToken(s string) bool {
+	if s == "" || s == "-" {
+		return false
+	}
+	if s[0] != '-' {
+		return false
+	}
+	n := strings.TrimLeft(s, "-")
+	if n == "" {
+		return false
+	}
+	for _, r := range n {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
 			continue
 		}
 		return false
