@@ -20,6 +20,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogFollowRequiresPathspecScenario(),
 		gitResetSoftWithPathsScenario(),
 		gitSwitchConflictingCreateFlagsScenario(),
+		gitCheckoutDetachConflictsWithCreateScenario(),
 		gitCheckoutNeedsPathsScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
@@ -201,6 +202,33 @@ func gitSwitchConflictingCreateFlagsScenario() Scenario {
 		Seed: Command{Args: []string{"switch", "-C", "foo"}},
 		Bad:  Command{Args: []string{"switch", "-c", "foo", "-C", "bar"}},
 		Help: Command{Args: []string{"switch", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "Switched to a new branch 'foo'",
+		},
+	}
+}
+
+func gitCheckoutDetachConflictsWithCreateScenario() Scenario {
+	return Scenario{
+		Name:        "git_checkout_detach_conflicts_with_create",
+		Description: "Run git checkout with --detach and -b/-B flags together (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"checkout", "-B", "foo"}},
+		Bad:  Command{Args: []string{"checkout", "-B", "foo", "--detach"}},
+		Help: Command{Args: []string{"checkout", "-h"}},
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "Switched to a new branch 'foo'",

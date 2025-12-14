@@ -129,6 +129,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "could not find key") ||
 		execx.ContainsFold(t, "unknown change class") ||
 		(execx.ContainsFold(t, "cannot do") && execx.ContainsFold(t, "reset") && execx.ContainsFold(t, "with paths")) ||
+		execx.ContainsFold(t, "cannot be used with") ||
 		execx.ContainsFold(t, "cannot be used together") ||
 		(execx.ContainsFold(t, "needs the paths") && execx.ContainsFold(t, "check out")) ||
 		execx.ContainsFold(t, "needed a single revision") ||
