@@ -4,9 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 )
 
 func RunCLI(args []string) int {
+	start := time.Now()
+	code := runCLI(args)
+	logCLIInvocation(start, time.Since(start), args, code)
+	return code
+}
+
+func runCLI(args []string) int {
 	if len(args) == 0 {
 		usage()
 		return 2

@@ -32,6 +32,9 @@ func shimList(args []string) int {
 		if name == "" || name[0] == '.' {
 			continue
 		}
+		if name == "ackchyually" || name == "ackchyually.exe" {
+			continue
+		}
 		names = append(names, name)
 	}
 	sort.Strings(names)

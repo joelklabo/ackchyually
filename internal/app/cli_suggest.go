@@ -5,6 +5,11 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/joelklabo/ackchyually/internal/contextkey"
+	"github.com/joelklabo/ackchyually/internal/execx"
+	"github.com/joelklabo/ackchyually/internal/redact"
+	"github.com/joelklabo/ackchyually/internal/store"
 )
 
 func printUnknownCommand(got string, candidates []string) {
@@ -15,6 +20,7 @@ func printUnknownCommand(got string, candidates []string) {
 	}
 	fmt.Fprintf(os.Stderr, "ackchyually: unknown command: %s\n", got)
 	printSuggestion([]string{"ackchyually"}, got, candidates)
+	printLastSuccessfulAckchyually()
 	printAvailable("commands", candidates)
 }
 
@@ -26,6 +32,7 @@ func printUnknownSubcommand(parent, got string, candidates []string) {
 	}
 	fmt.Fprintf(os.Stderr, "ackchyually: unknown %s subcommand: %s\n", parent, got)
 	printSuggestion([]string{"ackchyually", parent}, got, candidates)
+	printLastSuccessfulAckchyually()
 	printAvailable(parent+" subcommands", candidates)
 }
 
@@ -80,4 +87,28 @@ func bestCommandMatch(got string, candidates []string) (string, bool) {
 	}
 
 	return best, bestScore > 0
+}
+
+func printLastSuccessfulAckchyually() {
+	ctxKey := contextkey.Detect()
+	r := redact.Default()
+
+	if err := store.WithDB(func(db *store.DB) error {
+		cmds, err := db.ListSuccessful("ackchyually", ctxKey, 1)
+		if err != nil {
+			return err
+		}
+		if len(cmds) == 0 {
+			return nil
+		}
+		argv := r.RedactArgs(cmds[0])
+		if len(argv) == 0 {
+			return nil
+		}
+		fmt.Fprintln(os.Stderr, "ackchyually: last success here:")
+		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(argv))
+		return nil
+	}); err != nil {
+		_ = err // best-effort
+	}
 }
