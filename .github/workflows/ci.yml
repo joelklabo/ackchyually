@@ -43,5 +43,7 @@ jobs:
         with:
           files: coverage.out
           use_oidc: true
+          override_branch: ${{ github.ref_name }}
+          override_commit: ${{ github.sha }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: ${{ secrets.CODECOV_TOKEN != '' }}
