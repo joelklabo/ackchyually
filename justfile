@@ -28,5 +28,8 @@ build:
 install-local:
   go install ./cmd/ackchyually
 
+eval-helpcount:
+  go run ./cmd/ackchyually-eval
+
 site-sync-install:
   cp scripts/install.sh site/install.sh
