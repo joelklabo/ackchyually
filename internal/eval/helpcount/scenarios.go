@@ -19,6 +19,7 @@ func BuiltinScenarios() []Scenario {
 		gitShowUnknownRevisionScenario(),
 		gitConfigWrongNumberOfArgsScenario(),
 		gitAddPathspecScenario(),
+		gitBranchNameRequiredScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
@@ -392,6 +393,55 @@ func gitAddPathspecScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "add 'a.txt'",
+		},
+	}
+}
+
+func gitBranchNameRequiredScenario() Scenario {
+	return Scenario{
+		Name:        "git_branch_name_required",
+		Description: "Run git branch -D with a missing branch name (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "add", "."); err != nil {
+				return fmt.Errorf("git add: %w", err)
+			}
+			if _, err := env.RunDirect("git", "commit", "-m", "seed", "-q"); err != nil {
+				return fmt.Errorf("git commit: %w", err)
+			}
+			if _, err := env.RunDirect("git", "branch", "foo"); err != nil {
+				return fmt.Errorf("git branch foo: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"branch", "-D", "foo"}},
+		Noise: []Command{
+			{Args: []string{"branch", "foo"}},
+		},
+		Bad:  Command{Args: []string{"branch", "-D"}},
+		Help: Command{Args: []string{"branch", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "Deleted branch foo",
 		},
 	}
 }
