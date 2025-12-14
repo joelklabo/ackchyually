@@ -89,6 +89,8 @@ func isUsageish(code int, res execx.Result) bool {
 	return execx.ContainsFold(t, "usage:") ||
 		execx.ContainsFold(t, "unknown option") ||
 		execx.ContainsFold(t, "unrecognized option") ||
+		execx.ContainsFold(t, "unrecognized argument") ||
+		execx.ContainsFold(t, "invalid option") ||
 		execx.ContainsFold(t, "missing required")
 }
 

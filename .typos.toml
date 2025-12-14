@@ -1,0 +1,3 @@
+[default.extend-words]
+# Used intentionally in helpcount eval scenarios (a realistic flag typo).
+prety = "prety"
