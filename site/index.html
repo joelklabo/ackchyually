@@ -55,8 +55,13 @@
         </p>
 
         <div class="cmd-card" aria-label="install">
-          <div class="cmd-card__label">Install</div>
-          <pre><code>curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
+          <div class="cmd-card__header">
+            <div class="cmd-card__label">Install</div>
+            <button class="copy-btn" type="button" data-copy-target="#install-one-liner" aria-label="Copy install command">
+              Copy
+            </button>
+          </div>
+          <pre><code id="install-one-liner">curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
         </div>
 
         <div class="callout-ack">
@@ -125,5 +130,52 @@ ackchyually: this worked before here:
         <span class="muted">© 2025 ackchyually • MIT</span>
       </footer>
     </main>
+
+    <script>
+      (() => {
+        const setBtnText = (btn, text) => {
+          const original = btn.dataset.originalText || btn.textContent;
+          btn.dataset.originalText = original;
+          btn.textContent = text;
+          window.setTimeout(() => {
+            btn.textContent = original;
+          }, 1600);
+        };
+
+        const copyText = async (text) => {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.left = "-1000px";
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(ta);
+          if (!ok) throw new Error("copy failed");
+        };
+
+        document.querySelectorAll("[data-copy-target]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const sel = btn.getAttribute("data-copy-target");
+            const target = sel ? document.querySelector(sel) : null;
+            const text = (target && (target.textContent || "")).trim();
+            if (!text) return;
+            try {
+              await copyText(text);
+              setBtnText(btn, "Copied");
+            } catch {
+              setBtnText(btn, "Copy failed");
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
