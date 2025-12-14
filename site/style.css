@@ -121,17 +121,19 @@ code, pre {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
-.copy-btn { flex-shrink: 0; }
-
 .cmd-card__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
 }
 
 .cmd-card__row pre {
-  flex: 1 1 auto;
   min-width: 0;
+}
+
+.copy-btn {
+  justify-self: end;
 }
 
 .cmd-card__label {
