@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -29,8 +30,8 @@ LIMIT ?`, tool, ctxKey, limit)
 	for rows.Next() {
 		var argvJSON string
 		var n int
-		var last sql.NullTime
-		if err := rows.Scan(&argvJSON, &n, &last); err != nil {
+		var lastRaw sql.NullString
+		if err := rows.Scan(&argvJSON, &n, &lastRaw); err != nil {
 			continue
 		}
 
@@ -39,7 +40,33 @@ LIMIT ?`, tool, ctxKey, limit)
 			continue
 		}
 
-		out = append(out, SuccessCandidate{Argv: argv, Count: n, Last: last.Time})
+		out = append(out, SuccessCandidate{Argv: argv, Count: n, Last: parseDBTime(lastRaw.String)})
 	}
 	return out, nil
+}
+
+func parseDBTime(s string) time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}
+	}
+	if i := strings.Index(s, " m="); i != -1 {
+		s = strings.TrimSpace(s[:i])
+	}
+
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05 -0700 MST",
+		"2006-01-02 15:04:05.999999999 -0700",
+		"2006-01-02 15:04:05 -0700",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05",
+	} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
 }

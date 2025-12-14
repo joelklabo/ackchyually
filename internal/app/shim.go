@@ -75,18 +75,25 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 				return code
 			}
 		}
-		suggestKnownGood(tool, ctxKey)
+		suggestKnownGood(tool, ctxKey, argvSafe)
 	}
 
 	return res.ExitCode
 }
 
 func isUsageish(code int, res execx.Result) bool {
+	if code == 0 {
+		return false
+	}
 	if code == 64 {
 		return true
 	}
-	t := res.StderrTail + res.CombinedTail
+	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	return execx.ContainsFold(t, "usage:") ||
+		execx.ContainsFold(t, "usage of") ||
+		execx.ContainsFold(t, "flag provided but not defined") ||
+		execx.ContainsFold(t, "unknown flag") ||
+		execx.ContainsFold(t, "unknown shorthand flag") ||
 		execx.ContainsFold(t, "unknown option") ||
 		execx.ContainsFold(t, "unrecognized option") ||
 		execx.ContainsFold(t, "unrecognized argument") ||
@@ -94,17 +101,88 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "missing required")
 }
 
-func suggestKnownGood(tool, ctxKey string) {
+func pickKnownGood(cands []store.SuccessCandidate, argvSafe []string) []string {
+	if len(argvSafe) == 0 {
+		return nil
+	}
+
+	want := make(map[string]struct{}, len(argvSafe))
+	for _, a := range argvSafe[1:] { // exclude tool name
+		want[strings.ToLower(a)] = struct{}{}
+	}
+
+	var best []string
+	bestScore := 0
+	bestLast := time.Time{}
+
+	for _, c := range cands {
+		if len(c.Argv) == 0 {
+			continue
+		}
+		if slicesEqual(c.Argv, argvSafe) {
+			continue
+		}
+		if containsRedacted(c.Argv) {
+			continue
+		}
+
+		match := countArgMatches(want, c.Argv)
+		if match == 0 {
+			continue
+		}
+		prefix := commonPrefixLen(argvSafe, c.Argv)
+		score := match*1000 + prefix*10 + minInt(c.Count, 50)
+
+		if score > bestScore || (score == bestScore && c.Last.After(bestLast)) {
+			best = c.Argv
+			bestScore = score
+			bestLast = c.Last
+		}
+	}
+
+	return best
+}
+
+func countArgMatches(want map[string]struct{}, argv []string) int {
+	n := 0
+	for _, a := range argv[1:] { // exclude tool name
+		if _, ok := want[strings.ToLower(a)]; ok {
+			n++
+		}
+	}
+	return n
+}
+
+func commonPrefixLen(a, b []string) int {
+	n := 0
+	for n < len(a) && n < len(b) {
+		if a[n] != b[n] {
+			return n
+		}
+		n++
+	}
+	return n
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 	if err := store.WithDB(func(db *store.DB) error {
-		cmds, err := db.ListSuccessful(tool, ctxKey, 1)
+		cands, err := db.ListSuccessCandidates(tool, ctxKey, 200)
 		if err != nil {
 			return err
 		}
-		if len(cmds) == 0 {
+		argv := pickKnownGood(cands, argvSafe)
+		if len(argv) == 0 {
 			return nil
 		}
 		fmt.Fprintln(os.Stderr, "ackchyually: this worked before here:")
-		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(cmds[0]))
+		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(argv))
 		return nil
 	}); err != nil {
 		_ = err // best-effort
@@ -119,14 +197,11 @@ func autoExecKnownSuccessEnabled() bool {
 func autoExecKnownSuccess(tool, ctxKey string, argvSafe []string) (int, bool) {
 	var cmd []string
 	if err := store.WithDB(func(db *store.DB) error {
-		cmds, err := db.ListSuccessful(tool, ctxKey, 1)
+		cands, err := db.ListSuccessCandidates(tool, ctxKey, 200)
 		if err != nil {
 			return err
 		}
-		if len(cmds) == 0 {
-			return nil
-		}
-		cmd = cmds[0]
+		cmd = pickKnownGood(cands, argvSafe)
 		return nil
 	}); err != nil {
 		return 0, false

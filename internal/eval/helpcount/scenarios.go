@@ -9,8 +9,11 @@ import (
 func BuiltinScenarios() []Scenario {
 	return []Scenario{
 		gitLogSubjectScenario(),
+		gitLogSubjectNoiseScenario(),
 		gitDiffNameOnlyScenario(),
 		goTestCountScenario(),
+		goTestUnknownFlagScenario(),
+		goTestUnknownFlagNoiseScenario(),
 	}
 }
 
@@ -55,6 +58,16 @@ func gitLogSubjectScenario() Scenario {
 			FinalStdoutContain: "hello from eval",
 		},
 	}
+}
+
+func gitLogSubjectNoiseScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_subject_noise"
+	s.Description = "Get last commit subject with intervening noise (seeded vs unseeded)."
+	s.Noise = []Command{
+		{Args: []string{"status"}},
+	}
+	return s
 }
 
 func gitDiffNameOnlyScenario() Scenario {
@@ -109,32 +122,61 @@ func goTestCountScenario() Scenario {
 		Name:        "go_test_count_flag",
 		Description: "Run go test with a common flag parsing mistake (seeded vs unseeded).",
 		Tool:        "go",
-		Setup: func(env *Env) error {
-			mod := filepath.Join(env.WorkDir, "gomod")
-			if err := os.MkdirAll(mod, 0o755); err != nil {
-				return err
-			}
-			env.WorkDir = mod
+		Setup:       setupGoTestModule,
+		Seed:        Command{Args: []string{"test", "./...", "-count=1"}},
+		Bad:         Command{Args: []string{"test", "./...", "-count", "one"}},
+		Help:        Command{Args: []string{"help", "testflag"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "example.com/ackchyually-eval",
+		},
+	}
+}
 
-			if err := os.WriteFile(filepath.Join(mod, "go.mod"), []byte("module example.com/ackchyually-eval\ngo 1.24.0\n"), 0o644); err != nil {
-				return err
-			}
-			const testSrc = `package main
+func goTestUnknownFlagScenario() Scenario {
+	return Scenario{
+		Name:        "go_test_unknown_flag",
+		Description: "Run go test with an unknown flag (usage printed to stdout).",
+		Tool:        "go",
+		Setup:       setupGoTestModule,
+		Seed:        Command{Args: []string{"test", "./...", "-count=1"}},
+		Bad:         Command{Args: []string{"test", "./...", "-cunt=1"}},
+		Help:        Command{Args: []string{"help", "testflag"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "example.com/ackchyually-eval",
+		},
+	}
+}
+
+func goTestUnknownFlagNoiseScenario() Scenario {
+	s := goTestUnknownFlagScenario()
+	s.Name = "go_test_unknown_flag_noise"
+	s.Description = "Run go test with an unknown flag and intervening noise (seeded vs unseeded)."
+	s.Noise = []Command{
+		{Args: []string{"env", "GOPATH"}},
+	}
+	return s
+}
+
+func setupGoTestModule(env *Env) error {
+	mod := filepath.Join(env.WorkDir, "gomod")
+	if err := os.MkdirAll(mod, 0o755); err != nil {
+		return err
+	}
+	env.WorkDir = mod
+
+	if err := os.WriteFile(filepath.Join(mod, "go.mod"), []byte("module example.com/ackchyually-eval\ngo 1.24.0\n"), 0o644); err != nil {
+		return err
+	}
+	const testSrc = `package main
 
 import "testing"
 
 func TestOK(t *testing.T) {}
 `
-			if err := os.WriteFile(filepath.Join(mod, "ok_test.go"), []byte(testSrc), 0o644); err != nil {
-				return err
-			}
-			return nil
-		},
-		Seed: Command{Args: []string{"test", "./...", "-count=1"}},
-		Bad:  Command{Args: []string{"test", "./...", "-count", "one"}},
-		Help: Command{Args: []string{"help", "testflag"}},
-		Expect: Expectation{
-			FinalExitCode: 0,
-		},
+	if err := os.WriteFile(filepath.Join(mod, "ok_test.go"), []byte(testSrc), 0o644); err != nil {
+		return err
 	}
+	return nil
 }
