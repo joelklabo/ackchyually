@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/term"
+
 	"github.com/joelklabo/ackchyually/internal/execx"
 )
 
@@ -34,9 +36,57 @@ func shimInstall(tools []string) int {
 			return 1
 		}
 	}
-	fmt.Println("Installed shims in:", shimDir)
-	fmt.Println("Ensure PATH begins with:", shimDir)
+
+	bold, dim, green, yellow, reset := ansiStyles()
+
+	fmt.Printf("%s%sInstalled%s shims in:\n  %s\n", green, bold, reset, shimDir)
+	fmt.Println()
+
+	pathEnv := os.Getenv("PATH")
+	parts := strings.Split(pathEnv, string(os.PathListSeparator))
+	want := filepath.Clean(shimDir)
+	found := -1
+	for i, p := range parts {
+		if p == "" {
+			p = "."
+		}
+		if filepath.Clean(p) == want {
+			found = i
+			break
+		}
+	}
+
+	switch {
+	case found == 0:
+		fmt.Printf("%sOK%s: shim dir is first in PATH\n", green, reset)
+	case found == -1:
+		fmt.Printf("%s%sRequired%s: put shims first in PATH\n", yellow, bold, reset)
+		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+	case found > 0:
+		fmt.Printf("%s%sRequired%s: shim dir must be first in PATH (currently index=%d)\n", yellow, bold, reset, found)
+		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+	}
+	fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
+	fmt.Println("  hash -r 2>/dev/null || true")
+
+	fmt.Println()
+	fmt.Printf("%sVerify%s:\n", bold, reset)
+	fmt.Printf("  which %s\n", tools[0])
+	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0])
+	fmt.Println()
+	fmt.Printf("%sIf it prints something else, your shim dir isn't first in PATH.%s\n", dim, reset)
+
 	return 0
+}
+
+func ansiStyles() (bold, dim, green, yellow, reset string) {
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return "", "", "", "", ""
+	}
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+		return "", "", "", "", ""
+	}
+	return "\033[1m", "\033[2m", "\033[32m", "\033[33m", "\033[0m"
 }
 
 func shimUninstall(tools []string) int {
