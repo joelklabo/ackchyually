@@ -41,7 +41,16 @@ This repo is configured for `no-db` mode, but some `bd sync` flows may still req
 bd sync --flush-only --db .beads/beads.db
 
 # One-way sync from main on ephemeral branches:
-BD_NO_DB=0 bd sync --from-main --db .beads/beads.db --no-pull --no-push
+# NOTE: `bd sync --from-main` checks out `.beads/` from `origin/main`, so run this only with a clean tree
+# (or after committing `.beads/issues.jsonl`) to avoid overwriting local `.beads/*` edits.
+BD_NO_DB=0 bd sync --from-main --db .beads/beads.db
+
+# If your `origin` remote has no `main` ref (e.g., you haven't pushed yet), `--from-main` may fail.
+# Workaround: temporarily point `origin` at the local repo for the duration of the command.
+orig=$(git remote get-url origin)
+git remote set-url origin .
+BD_NO_DB=0 bd sync --from-main --db .beads/beads.db
+git remote set-url origin "$orig"
 ```
 
 `bd blocked` may not show issues with `status=blocked`; use:
