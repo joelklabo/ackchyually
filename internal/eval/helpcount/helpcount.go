@@ -234,7 +234,7 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		finalExit = exitCode(err)
 	}
 
-	helpInv, err := env.CountHelpInvocations(s.Tool, s.Help.Args)
+	helpInv, err := env.CountHelpInvocations(s.Tool, nil)
 	if err != nil {
 		return RunResult{Mode: mode, Error: err.Error()}
 	}
