@@ -32,6 +32,26 @@ bd update <issue-id> --status closed
 bd sync
 ```
 
+### Repo notes / workarounds
+
+This repo is configured for `no-db` mode, but some `bd sync` flows may still require SQLite:
+
+```bash
+# Flush JSONL in no-db mode (workaround for "not in a bd workspace"):
+bd sync --flush-only --db .beads/beads.db
+
+# One-way sync from main on ephemeral branches:
+BD_NO_DB=0 bd sync --from-main --db .beads/beads.db --no-pull --no-push
+```
+
+`bd blocked` may not show issues with `status=blocked`; use:
+
+```bash
+bd list --status blocked
+```
+
+`bd ready` may include issues that still have `blocks` dependencies; treat dependencies in `bd show <issue-id>` as authoritative.
+
 ### Recommended git merge driver
 For nicer merges of `.beads/issues.jsonl`, run once per clone:
 
