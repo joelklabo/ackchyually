@@ -113,6 +113,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "invalid option") ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " value")) ||
+		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " format")) ||
 		execx.ContainsFold(t, "url rejected") ||
 		execx.ContainsFold(t, "invalid regexp") ||
 		execx.ContainsFold(t, "not an integer") ||

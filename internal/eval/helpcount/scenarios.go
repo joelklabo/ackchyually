@@ -16,6 +16,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogUnknownDateFormatScenario(),
 		gitLogInvalidDecorateOptionScenario(),
 		gitLogInvalidColorValueScenario(),
+		gitLogInvalidPrettyFormatScenario(),
 		gitLogInvalidDiffFilterScenario(),
 		gitLogFollowRequiresPathspecScenario(),
 		gitResetSoftWithPathsScenario(),
@@ -148,6 +149,16 @@ func gitLogInvalidColorValueScenario() Scenario {
 	s.Description = "Run git log with an invalid --color value (seeded vs unseeded)."
 	s.Seed = Command{Args: []string{"log", "-1", "--color=always", "--pretty=%s"}}
 	s.Bad = Command{Args: []string{"log", "-1", "--color=banana", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogInvalidPrettyFormatScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_invalid_pretty_format"
+	s.Description = "Run git log with an invalid --pretty format value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--pretty=foo"}}
 	s.Help = Command{Args: []string{"log", "-h"}}
 	return s
 }
