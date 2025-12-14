@@ -1,0 +1,53 @@
+### OS junk
+.DS_Store
+Thumbs.db
+
+### Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+### Local env / tooling
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+.envrc.*
+!.envrc.example
+.direnv/
+.mise.toml.local
+
+### Beads (issue tracking; keep only the portable files)
+.beads/*
+!.beads/.gitignore
+!.beads/README.md
+!.beads/config.yaml
+!.beads/metadata.json
+!.beads/issues.jsonl
+!.beads/deletions.jsonl
+!.beads/config.json
+
+### Go build/test artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage*.out
+
+### Local build output
+dist/
+bin/
+.tmp/
+tmp/
+/ackchyually
+/ackchyually.exe
+/cmd/ackchyually/ackchyually
+/cmd/ackchyually/ackchyually.exe

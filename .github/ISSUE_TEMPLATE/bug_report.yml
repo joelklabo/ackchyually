@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a problem with ackchyually
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+  - type: input
+    id: version
+    attributes:
+      label: ackchyually version
+      placeholder: "ackchyually version"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: pty
+    attributes:
+      label: PTY / interactive impact
+      description: If relevant, describe the interactive CLI behavior and whether stdin/stdout are TTYs.
+

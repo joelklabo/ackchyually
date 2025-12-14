@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / discussion
+    url: https://github.com/joelklabo/ackchyually/discussions
+    about: Ask and answer questions here.
+  - name: Security reports
+    url: https://github.com/joelklabo/ackchyually/security/advisories/new
+    about: Please report vulnerabilities here.
+

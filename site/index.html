@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ackchyually</title>
+    <meta
+      name="description"
+      content="The annoying nerd coworker for your CLI. PTY-first. Remembers what worked and suggests the right command."
+    />
+    <link rel="canonical" href="https://ackchyually.sh/" />
+    <link rel="icon" type="image/png" href="./assets/ackchyually_avatar_512.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ackchyually" />
+    <meta
+      property="og:description"
+      content="The annoying nerd coworker for your CLI. PTY-first. Remembers what worked and suggests the right command."
+    />
+    <meta property="og:url" content="https://ackchyually.sh/" />
+    <meta property="og:image" content="https://ackchyually.sh/assets/ackchyually_social_1280x640.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://ackchyually.sh/assets/ackchyually_social_1280x640.png" />
+
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="container nav__inner">
+        <a class="brand" href="./">ackchyually</a>
+        <nav class="nav__links" aria-label="links">
+          <a href="https://github.com/joelklabo/ackchyually" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/joelklabo/ackchyually/releases" rel="noopener noreferrer">Releases</a>
+          <a href="https://github.com/joelklabo/ackchyually/issues" rel="noopener noreferrer">Issues</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <img
+          class="hero__banner"
+          src="./assets/ackchyually_hero_2400x750.png"
+          width="2400"
+          height="750"
+          alt="ackchyually"
+          loading="eager"
+        />
+
+        <h1 class="title">ackchyually</h1>
+        <p class="lede">
+          The annoying nerd coworker for your CLI. Remembers what worked (per repo). Suggests the right command when you get the
+          details wrong.
+        </p>
+
+        <div class="cmd-card" aria-label="install">
+          <div class="cmd-card__label">Install</div>
+          <pre><code>curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
+        </div>
+
+        <div class="callout-ack">
+          <strong>ackchyually:</strong> PTY mode on (interactive).
+        </div>
+
+        <div class="btn-row">
+          <a class="btn btn-primary" href="https://github.com/joelklabo/ackchyually" rel="noopener noreferrer">GitHub</a>
+          <a class="btn btn-secondary" href="https://github.com/joelklabo/ackchyually/releases" rel="noopener noreferrer"
+            >Releases</a
+          >
+          <a class="btn btn-secondary" href="https://github.com/joelklabo/ackchyually/discussions" rel="noopener noreferrer"
+            >Discussions</a
+          >
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">Quickstart</h2>
+        <div class="cmd-card">
+          <pre><code>ackchyually shim install git gh xcodebuild
+export PATH="$HOME/.local/share/ackchyually/shims:$PATH"</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">How it works</h2>
+        <ul class="bullets">
+          <li><strong>Transparent shims:</strong> you keep typing <code>git ...</code> normally.</li>
+          <li><strong>PTY-first:</strong> if you're in a TTY, tools run under a real PTY so interactive CLIs behave normally.</li>
+          <li><strong>Local memory:</strong> logs invocations (redacted) to SQLite, keyed by repo/cwd context.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="h2">PTY-first (hard requirement)</h2>
+        <p class="p">
+          If you're in a TTY, ackchyually runs tools under a PTY. This is non-negotiable for interactive CLIs and agent shells
+          (Claude Code / Codex CLI / Copilot CLI).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="h2">Security</h2>
+        <p class="p">
+          ackchyually redacts before writing to the local DB and applies stricter redaction on export. Treat your local database as
+          sensitive.
+        </p>
+      </section>
+
+      <footer class="footer">
+        <span class="muted">© 2025 ackchyually • MIT</span>
+      </footer>
+    </main>
+  </body>
+</html>
