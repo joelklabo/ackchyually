@@ -18,6 +18,7 @@ func BuiltinScenarios() []Scenario {
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
 		gitConfigWrongNumberOfArgsScenario(),
+		gitAddPathspecScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
@@ -361,6 +362,36 @@ func gitConfigWrongNumberOfArgsScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "Eval",
+		},
+	}
+}
+
+func gitAddPathspecScenario() Scenario {
+	return Scenario{
+		Name:        "git_add_pathspec",
+		Description: "Run git add with a pathspec typo (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+				return err
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"add", "-n", "a.txt"}},
+		Bad:  Command{Args: []string{"add", "-n", "a.tx"}},
+		Help: Command{Args: []string{"add", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "add 'a.txt'",
 		},
 	}
 }
