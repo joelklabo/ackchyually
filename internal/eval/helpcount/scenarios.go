@@ -10,12 +10,14 @@ func BuiltinScenarios() []Scenario {
 	return []Scenario{
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
+		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
 		goUnknownCommandScenario(),
+		ghVersionTypoScenario(),
 	}
 }
 
@@ -152,6 +154,49 @@ func gitCommitMissingValueScenario() Scenario {
 	}
 }
 
+func gitStatusTypoScenario() Scenario {
+	return Scenario{
+		Name:        "git_status_typo",
+		Description: "Run git status with a subcommand typo (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "add", "."); err != nil {
+				return fmt.Errorf("git add: %w", err)
+			}
+			if _, err := env.RunDirect("git", "commit", "-m", "seed", "-q"); err != nil {
+				return fmt.Errorf("git commit: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"status"}},
+		Bad:  Command{Args: []string{"stauts"}},
+		Help: Command{Args: []string{"status", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "working tree clean",
+		},
+	}
+}
+
 func goTestCountScenario() Scenario {
 	return Scenario{
 		Name:        "go_test_count_flag",
@@ -230,4 +275,22 @@ func TestOK(t *testing.T) {}
 		return err
 	}
 	return nil
+}
+
+func ghVersionTypoScenario() Scenario {
+	return Scenario{
+		Name:        "gh_version_typo",
+		Description: "Run gh version with a subcommand typo (seeded vs unseeded).",
+		Tool:        "gh",
+		Setup: func(_ *Env) error {
+			return nil
+		},
+		Seed: Command{Args: []string{"version"}},
+		Bad:  Command{Args: []string{"verison"}}, //nolint:misspell // intentional typo scenario
+		Help: Command{Args: []string{"--help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "gh version",
+		},
+	}
 }

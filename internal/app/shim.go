@@ -97,6 +97,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "unknown command") ||
 		execx.ContainsFold(t, "unknown subcommand") ||
 		execx.ContainsFold(t, "for usage") ||
+		(execx.ContainsFold(t, "is not a") && execx.ContainsFold(t, "command") && execx.ContainsFold(t, "--help")) ||
 		execx.ContainsFold(t, "requires a value") ||
 		execx.ContainsFold(t, "requires an argument") ||
 		execx.ContainsFold(t, "requires at least") ||
