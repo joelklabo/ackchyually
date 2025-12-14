@@ -14,6 +14,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogInvalidCountScenario(),
 		gitLogUnknownDateFormatScenario(),
 		gitLogInvalidDecorateOptionScenario(),
+		gitLogInvalidColorValueScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
 		gitConfigWrongNumberOfArgsScenario(),
@@ -119,6 +120,16 @@ func gitLogInvalidDecorateOptionScenario() Scenario {
 	s.Description = "Run git log with an invalid --decorate option value (seeded vs unseeded)."
 	s.Seed = Command{Args: []string{"log", "-1", "--decorate=short", "--pretty=%s"}}
 	s.Bad = Command{Args: []string{"log", "-1", "--decorate=bananas", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogInvalidColorValueScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_invalid_color_value"
+	s.Description = "Run git log with an invalid --color value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--color=always", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--color=banana", "--pretty=%s"}}
 	s.Help = Command{Args: []string{"log", "-h"}}
 	return s
 }

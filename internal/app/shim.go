@@ -115,6 +115,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "wrong number of arguments") ||
 		execx.ContainsFold(t, "unknown revision") ||
 		execx.ContainsFold(t, "unknown date format") ||
+		(execx.ContainsFold(t, "option") && execx.ContainsFold(t, "expects")) ||
 		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required")
 }
