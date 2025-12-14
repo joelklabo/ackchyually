@@ -22,6 +22,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogFollowRequiresPathspecScenario(),
 		gitResetSoftWithPathsScenario(),
 		gitSwitchConflictingCreateFlagsScenario(),
+		gitSwitchOnlyOneReferenceExpectedScenario(),
 		gitCheckoutDetachConflictsWithCreateScenario(),
 		gitCheckoutNeedsPathsScenario(),
 		gitRevParseMissingRevisionScenario(),
@@ -229,6 +230,33 @@ func gitSwitchConflictingCreateFlagsScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "Switched to a new branch 'foo'",
+		},
+	}
+}
+
+func gitSwitchOnlyOneReferenceExpectedScenario() Scenario {
+	return Scenario{
+		Name:        "git_switch_only_one_reference_expected",
+		Description: "Run git switch with too many references (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"switch", "-C", "foo"}},
+		Bad:  Command{Args: []string{"switch", "foo", "bar"}},
+		Help: Command{Args: []string{"switch", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "branch 'foo'",
 		},
 	}
 }
