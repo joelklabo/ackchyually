@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func BuiltinScenarios() []Scenario {
@@ -17,6 +18,9 @@ func BuiltinScenarios() []Scenario {
 		gitLogInvalidColorValueScenario(),
 		gitLogInvalidDiffFilterScenario(),
 		gitLogFollowRequiresPathspecScenario(),
+		gitResetSoftWithPathsScenario(),
+		gitSwitchConflictingCreateFlagsScenario(),
+		gitCheckoutNeedsPathsScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
 		gitConfigWrongNumberOfArgsScenario(),
@@ -29,6 +33,7 @@ func BuiltinScenarios() []Scenario {
 		gitDiffInvalidDiffAlgorithmScenario(),
 		curlUnknownOptionScenario(),
 		curlMissingOptionValueScenario(),
+		curlInvalidURLScenario(),
 		goEnvWriteKeyValueScenario(),
 		goEnvWriteUnknownVarScenario(),
 		goTestCountScenario(),
@@ -165,6 +170,117 @@ func gitLogFollowRequiresPathspecScenario() Scenario {
 	return s
 }
 
+func gitResetSoftWithPathsScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_reset_soft_with_paths"
+	s.Description = "Run git reset --soft with a pathspec (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"reset", "--soft", "HEAD"}}
+	s.Bad = Command{Args: []string{"reset", "--soft", "HEAD", "--", "hello.txt"}}
+	s.Help = Command{Args: []string{"reset", "-h"}}
+	s.Expect = Expectation{FinalExitCode: 0}
+	return s
+}
+
+func gitSwitchConflictingCreateFlagsScenario() Scenario {
+	return Scenario{
+		Name:        "git_switch_conflicting_create_flags",
+		Description: "Run git switch with conflicting create flags (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"switch", "-C", "foo"}},
+		Bad:  Command{Args: []string{"switch", "-c", "foo", "-C", "bar"}},
+		Help: Command{Args: []string{"switch", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "Switched to a new branch 'foo'",
+		},
+	}
+}
+
+func gitCheckoutNeedsPathsScenario() Scenario {
+	return Scenario{
+		Name:        "git_checkout_needs_paths",
+		Description: "Run git checkout --ours/--theirs without paths (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("base\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "add", "a.txt"); err != nil {
+				return fmt.Errorf("git add: %w", err)
+			}
+			if _, err := env.RunDirect("git", "commit", "-m", "base", "-q"); err != nil {
+				return fmt.Errorf("git commit: %w", err)
+			}
+
+			if _, err := env.RunDirect("git", "checkout", "-b", "feature", "-q"); err != nil {
+				return fmt.Errorf("git checkout -b feature: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("feature\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "commit", "-am", "feature", "-q"); err != nil {
+				return fmt.Errorf("git commit feature: %w", err)
+			}
+
+			if _, err := env.RunDirect("git", "checkout", "main", "-q"); err != nil {
+				return fmt.Errorf("git checkout main: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("main\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "commit", "-am", "main", "-q"); err != nil {
+				return fmt.Errorf("git commit main: %w", err)
+			}
+
+			mergeOut, mergeErr := env.RunDirect("git", "merge", "feature")
+			if mergeErr == nil {
+				return fmt.Errorf("expected merge conflict, but merge succeeded:\n%s", mergeOut)
+			}
+
+			statusOut, statusErr := env.RunDirect("git", "status", "--porcelain")
+			if statusErr != nil {
+				return fmt.Errorf("git status: %w", statusErr)
+			}
+			if !strings.Contains(statusOut, "UU a.txt") {
+				return fmt.Errorf("expected merge conflict, but status missing 'UU a.txt':\n%s\nmerge output:\n%s", statusOut, mergeOut)
+			}
+			return nil
+		},
+		Seed:   Command{Args: []string{"checkout", "--ours", "--", "a.txt"}},
+		Bad:    Command{Args: []string{"checkout", "--ours", "--theirs"}},
+		Help:   Command{Args: []string{"checkout", "-h"}},
+		Expect: Expectation{FinalExitCode: 0},
+	}
+}
+
 func gitRevParseMissingRevisionScenario() Scenario {
 	return Scenario{
 		Name:        "git_rev_parse_missing_revision",
@@ -275,6 +391,22 @@ func curlMissingOptionValueScenario() Scenario {
 		Setup:       func(_ *Env) error { return nil },
 		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
 		Bad:         Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts", "-X"}},
+		Help:        Command{Args: []string{"--help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "ok",
+		},
+	}
+}
+
+func curlInvalidURLScenario() Scenario {
+	return Scenario{
+		Name:        "curl_invalid_url",
+		Description: "Run curl with a malformed URL (seeded vs unseeded).",
+		Tool:        "curl",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
+		Bad:         Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "http://"}},
 		Help:        Command{Args: []string{"--help"}},
 		Expect: Expectation{
 			FinalExitCode:      0,
