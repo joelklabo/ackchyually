@@ -97,7 +97,7 @@ func (db *DB) InsertInvocation(inv Invocation) error {
 INSERT INTO invocations
 (created_at, duration_ms, context_key, tool, exe_path, tool_id, argv_json, exit_code, mode, stdout_tail, stderr_tail, combined_tail)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		inv.At, inv.DurationMS, inv.ContextKey, inv.Tool, inv.ExePath, nullIfZero(inv.ToolID),
+		inv.At.UTC().Format(time.RFC3339Nano), inv.DurationMS, inv.ContextKey, inv.Tool, inv.ExePath, nullIfZero(inv.ToolID),
 		inv.ArgvJSON, inv.ExitCode, inv.Mode, inv.StdoutTail, inv.StderrTail, inv.CombinedTail,
 	)
 	return err

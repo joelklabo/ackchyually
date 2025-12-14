@@ -36,8 +36,12 @@ type Scenario struct {
 	Setup       func(*Env) error
 
 	Seed Command
-	Bad  Command
-	Help Command
+	// Noise runs after Seed (memory mode only) and before Bad.
+	// This simulates realistic sessions where unrelated successes happen between
+	// a known-good invocation and a later failure.
+	Noise []Command
+	Bad   Command
+	Help  Command
 
 	Expect Expectation
 }
@@ -173,6 +177,13 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 			return RunResult{Mode: mode, Error: fmt.Sprintf("seed failed: %v", err)}
 		}
 		steps++
+
+		for _, c := range s.Noise {
+			if _, err := env.RunShim(s.Tool, c.Args...); err != nil {
+				return RunResult{Mode: mode, Error: fmt.Sprintf("noise failed: %v", err)}
+			}
+			steps++
+		}
 	}
 
 	badOut, badErr := env.RunShim(s.Tool, s.Bad.Args...)
@@ -203,7 +214,7 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		finalExit = exitCode(err)
 	}
 
-	helpInv, err := env.CountHelpInvocations(s.Tool)
+	helpInv, err := env.CountHelpInvocations(s.Tool, s.Help.Args)
 	if err != nil {
 		return RunResult{Mode: mode, Error: err.Error()}
 	}
@@ -338,7 +349,7 @@ func (e *Env) dbPath() string {
 	return filepath.Join(e.Home, ".local", "share", "ackchyually", "ackchyually.sqlite")
 }
 
-func (e *Env) CountHelpInvocations(tool string) (int, error) {
+func (e *Env) CountHelpInvocations(tool string, helpArgs []string) (int, error) {
 	dbPath := e.dbPath()
 	if _, err := os.Stat(dbPath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -368,11 +379,19 @@ func (e *Env) CountHelpInvocations(tool string) (int, error) {
 		if err := json.Unmarshal([]byte(argvJSON), &argv); err != nil {
 			continue
 		}
-		if isHelpInvocation(argv) {
+		if matchesHelpInvocation(tool, helpArgs, argv) {
 			n++
 		}
 	}
 	return n, rows.Err()
+}
+
+func matchesHelpInvocation(tool string, helpArgs []string, argv []string) bool {
+	if len(helpArgs) > 0 {
+		want := append([]string{tool}, helpArgs...)
+		return slicesEqual(argv, want)
+	}
+	return isHelpInvocation(argv)
 }
 
 func isHelpInvocation(argv []string) bool {
@@ -505,4 +524,16 @@ func getEnv(env []string, key string) string {
 		}
 	}
 	return ""
+}
+
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
