@@ -17,6 +17,7 @@ func shellQuote(s string) string {
 	safe := true
 	for _, r := range s {
 		if r != '-' && r != '_' && r != '.' && r != '/' &&
+			r != '=' && r != ':' && r != '%' && r != '+' && r != ',' && r != '@' &&
 			(r < '0' || r > '9') &&
 			(r < 'A' || r > 'Z') &&
 			(r < 'a' || r > 'z') {

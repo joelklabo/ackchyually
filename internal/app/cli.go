@@ -34,6 +34,8 @@ func usage() {
 
 Commands:
   shim install <tool...>
+  shim list
+  shim enable
   shim uninstall <tool...>
   shim doctor
   best --tool <tool> "<query>"
@@ -53,6 +55,10 @@ func shimCmd(args []string) int {
 	switch args[0] {
 	case "install":
 		return shimInstall(args[1:])
+	case "list":
+		return shimList(args[1:])
+	case "enable":
+		return shimEnable(args[1:])
 	case "uninstall":
 		return shimUninstall(args[1:])
 	case "doctor":

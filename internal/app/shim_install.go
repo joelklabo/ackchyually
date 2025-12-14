@@ -67,6 +67,7 @@ func shimInstall(tools []string) int {
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 	}
 	fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
+	fmt.Println("  # or run: ackchyually shim enable")
 	fmt.Println("  hash -r 2>/dev/null || true")
 
 	fmt.Println()

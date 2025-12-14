@@ -415,7 +415,7 @@ func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 			suggestNoKnownGood(tool)
 			return nil
 		}
-		fmt.Fprintln(os.Stderr, "ackchyually: this worked before here:")
+		fmt.Fprintln(os.Stderr, "ackchyually: suggestion (previous success in this repo):")
 		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(argv))
 		return nil
 	}); err != nil {

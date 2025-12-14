@@ -429,7 +429,8 @@ func isHelpInvocation(argv []string) bool {
 func ExtractSuggestion(output string) (string, bool) {
 	lines := strings.Split(output, "\n")
 	for i := 0; i < len(lines); i++ {
-		if strings.Contains(lines[i], "ackchyually: this worked before here:") {
+		if strings.Contains(lines[i], "ackchyually: suggestion") ||
+			strings.Contains(lines[i], "ackchyually: this worked before here:") {
 			for j := i + 1; j < len(lines); j++ {
 				l := strings.TrimSpace(lines[j])
 				if l == "" {
