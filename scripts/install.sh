@@ -77,6 +77,17 @@ tar -xzf "$ASSET"
 mkdir -p "$BINDIR"
 install -m 0755 "$BIN" "$BINDIR/$BIN"
 
-echo "Installed $BIN to $BINDIR"
-echo "Next: $BIN shim install git gh xcodebuild"
+DATA_DIR="${HOME}/.local/share/ackchyually"
+SHIM_DIR="${DATA_DIR}/shims"
+mkdir -p "$SHIM_DIR"
 
+echo "Installed $BIN to $BINDIR"
+
+case ":$PATH:" in
+  *":$BINDIR:"*) ;;
+  *) echo "Add to PATH: export PATH=\"$BINDIR:\$PATH\"" ;;
+esac
+
+echo "Shims live in: $SHIM_DIR"
+echo "Next: $BIN shim install git gh xcodebuild"
+echo "Ensure PATH begins with shims: export PATH=\"$SHIM_DIR:\$PATH\""
