@@ -15,14 +15,18 @@ func BuiltinScenarios() []Scenario {
 		gitLogUnknownDateFormatScenario(),
 		gitLogInvalidDecorateOptionScenario(),
 		gitLogInvalidColorValueScenario(),
+		gitLogInvalidDiffFilterScenario(),
+		gitLogFollowRequiresPathspecScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
 		gitConfigWrongNumberOfArgsScenario(),
+		gitConfigInvalidTypeScenario(),
 		gitAddPathspecScenario(),
 		gitBranchNameRequiredScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
+		gitDiffInvalidDiffAlgorithmScenario(),
 		curlUnknownOptionScenario(),
 		curlMissingOptionValueScenario(),
 		goEnvWriteKeyValueScenario(),
@@ -32,6 +36,9 @@ func BuiltinScenarios() []Scenario {
 		goTestUnknownFlagNoiseScenario(),
 		goTestInvalidRunRegexScenario(),
 		goUnknownCommandScenario(),
+		ghAliasSetMissingExpansionScenario(),
+		ghConfigSetInvalidValueScenario(),
+		ghConfigGetUnknownKeyScenario(),
 		ghVersionTypoScenario(),
 	}
 }
@@ -134,6 +141,26 @@ func gitLogInvalidColorValueScenario() Scenario {
 	s.Description = "Run git log with an invalid --color value (seeded vs unseeded)."
 	s.Seed = Command{Args: []string{"log", "-1", "--color=always", "--pretty=%s"}}
 	s.Bad = Command{Args: []string{"log", "-1", "--color=banana", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogInvalidDiffFilterScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_invalid_diff_filter"
+	s.Description = "Run git log with an invalid --diff-filter value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--diff-filter=A", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--diff-filter=Z", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogFollowRequiresPathspecScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_follow_requires_pathspec"
+	s.Description = "Run git log --follow without a pathspec (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--follow", "--pretty=%s", "--", "hello.txt"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--follow", "--pretty=%s"}}
 	s.Help = Command{Args: []string{"log", "-h"}}
 	return s
 }
@@ -303,6 +330,16 @@ func gitDiffNameOnlyScenario() Scenario {
 	}
 }
 
+func gitDiffInvalidDiffAlgorithmScenario() Scenario {
+	s := gitDiffNameOnlyScenario()
+	s.Name = "git_diff_invalid_diff_algorithm"
+	s.Description = "Run git diff with an invalid --diff-algorithm value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"diff", "--diff-algorithm=myers", "--name-only"}}
+	s.Bad = Command{Args: []string{"diff", "--diff-algorithm=banana", "--name-only"}}
+	s.Help = Command{Args: []string{"diff", "-h"}}
+	return s
+}
+
 func gitCommitMissingValueScenario() Scenario {
 	return Scenario{
 		Name:        "git_commit_missing_value",
@@ -367,6 +404,15 @@ func gitConfigWrongNumberOfArgsScenario() Scenario {
 			FinalStdoutContain: "Eval",
 		},
 	}
+}
+
+func gitConfigInvalidTypeScenario() Scenario {
+	s := gitConfigWrongNumberOfArgsScenario()
+	s.Name = "git_config_invalid_type"
+	s.Description = "Run git config with an invalid --type value (seeded vs unseeded)."
+	s.Bad = Command{Args: []string{"config", "--type=banana", "user.name"}}
+	s.Help = Command{Args: []string{"config", "-h"}}
+	return s
 }
 
 func gitAddPathspecScenario() Scenario {
@@ -631,6 +677,55 @@ func ghVersionTypoScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "gh version",
+		},
+	}
+}
+
+func ghAliasSetMissingExpansionScenario() Scenario {
+	return Scenario{
+		Name:        "gh_alias_set_missing_expansion",
+		Description: "Run gh alias set with a missing expansion argument (seeded vs unseeded).",
+		Tool:        "gh",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"alias", "set", "--clobber", "vv", "version"}},
+		Bad:         Command{Args: []string{"alias", "set", "vv"}},
+		Help:        Command{Args: []string{"alias", "set", "--help"}},
+		Expect: Expectation{
+			FinalExitCode: 0,
+		},
+	}
+}
+
+func ghConfigSetInvalidValueScenario() Scenario {
+	return Scenario{
+		Name:        "gh_config_set_invalid_value",
+		Description: "Run gh config set with an invalid value (seeded vs unseeded).",
+		Tool:        "gh",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"config", "set", "git_protocol", "ssh"}},
+		Bad:         Command{Args: []string{"config", "set", "git_protocol", "bananas"}},
+		Help:        Command{Args: []string{"config", "set", "--help"}},
+		Expect: Expectation{
+			FinalExitCode: 0,
+		},
+	}
+}
+
+func ghConfigGetUnknownKeyScenario() Scenario {
+	return Scenario{
+		Name:        "gh_config_get_unknown_key",
+		Description: "Run gh config get with an unknown key (seeded vs unseeded).",
+		Tool:        "gh",
+		Setup: func(env *Env) error {
+			_, err := env.RunDirect("gh", "config", "set", "git_protocol", "ssh")
+			return err
+		},
+		Seed: Command{Args: []string{"config", "get", "git_protocol"}},
+		Bad:  Command{Args: []string{"config", "get", "git_protocl"}}, //nolint:misspell // intentional typo scenario
+		Help: Command{Args: []string{"config", "get", "--help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "ssh",
 		},
 	}
 }

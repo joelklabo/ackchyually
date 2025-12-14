@@ -104,9 +104,12 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "requires an argument") ||
 		execx.ContainsFold(t, "requires parameter") ||
 		execx.ContainsFold(t, "requires at least") ||
+		execx.ContainsFold(t, "requires exactly") ||
+		(execx.ContainsFold(t, "accepts") && execx.ContainsFold(t, "arg(s)") && execx.ContainsFold(t, "received")) ||
 		execx.ContainsFold(t, "unknown option") ||
 		execx.ContainsFold(t, "unrecognized option") ||
 		execx.ContainsFold(t, "unrecognized argument") ||
+		(execx.ContainsFold(t, "unrecognized --") && execx.ContainsFold(t, " argument")) ||
 		execx.ContainsFold(t, "invalid option") ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
 		execx.ContainsFold(t, "invalid regexp") ||
@@ -120,6 +123,10 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "unknown revision") ||
 		execx.ContainsFold(t, "unknown date format") ||
 		(execx.ContainsFold(t, "option") && execx.ContainsFold(t, "expects")) ||
+		(execx.ContainsFold(t, "option") && execx.ContainsFold(t, "accepts")) ||
+		execx.ContainsFold(t, "valid values") ||
+		execx.ContainsFold(t, "could not find key") ||
+		execx.ContainsFold(t, "unknown change class") ||
 		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required")
 }
