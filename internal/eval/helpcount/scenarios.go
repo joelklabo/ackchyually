@@ -15,10 +15,12 @@ func BuiltinScenarios() []Scenario {
 		gitLogUnknownDateFormatScenario(),
 		gitLogInvalidDecorateOptionScenario(),
 		gitRevParseMissingRevisionScenario(),
+		gitShowUnknownRevisionScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
 		curlUnknownOptionScenario(),
+		curlMissingOptionValueScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
@@ -163,6 +165,49 @@ func gitRevParseMissingRevisionScenario() Scenario {
 	}
 }
 
+func gitShowUnknownRevisionScenario() Scenario {
+	return Scenario{
+		Name:        "git_show_unknown_revision",
+		Description: "Run git show with an unknown revision (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+				return err
+			}
+			if _, err := env.RunDirect("git", "add", "."); err != nil {
+				return fmt.Errorf("git add: %w", err)
+			}
+			if _, err := env.RunDirect("git", "commit", "-m", "seed", "-q"); err != nil {
+				return fmt.Errorf("git commit: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"show", "-s", "--pretty=%s", "HEAD"}},
+		Bad:  Command{Args: []string{"show", "-s", "--pretty=%s", "HEA"}},
+		Help: Command{Args: []string{"show", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "seed",
+		},
+	}
+}
+
 func curlUnknownOptionScenario() Scenario {
 	return Scenario{
 		Name:        "curl_unknown_option",
@@ -171,6 +216,22 @@ func curlUnknownOptionScenario() Scenario {
 		Setup:       func(_ *Env) error { return nil },
 		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
 		Bad:         Command{Args: []string{"--fial", "-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}}, //nolint:misspell // intentional typo scenario
+		Help:        Command{Args: []string{"--help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "ok",
+		},
+	}
+}
+
+func curlMissingOptionValueScenario() Scenario {
+	return Scenario{
+		Name:        "curl_missing_option_value",
+		Description: "Run curl with a missing option value (seeded vs unseeded).",
+		Tool:        "curl",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
+		Bad:         Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts", "-X"}},
 		Help:        Command{Args: []string{"--help"}},
 		Expect: Expectation{
 			FinalExitCode:      0,
