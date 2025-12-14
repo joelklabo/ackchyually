@@ -8,13 +8,14 @@ on:
     branches: [ main ]
 
 permissions:
-  security-events: write
-  id-token: write
-  contents: read
+  read-all
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
     steps:
       - uses: ossf/scorecard-action@v2.4.3
         with:
@@ -24,4 +25,3 @@ jobs:
       - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
-
