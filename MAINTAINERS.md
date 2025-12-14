@@ -17,6 +17,8 @@ This is a one-time checklist for setting up the GitHub repo, GitHub Pages, and b
 5) (Optional) Enable Discussions
 6) (Optional) Configure Codecov if needed:
    - If Codecov requires a token, add `CODECOV_TOKEN` as a GitHub Actions secret
+   - (Optional) With `gh`:
+     - `printf '%s' \"$CODECOV_TOKEN\" | gh secret set CODECOV_TOKEN -R joelklabo/ackchyually`
 
 ## Optional automation (gh)
 

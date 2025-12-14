@@ -55,6 +55,41 @@ ackchyually best --tool xcodebuild "test"
 ackchyually export --format md --tool xcodebuild
 ```
 
+## What it looks like (when it’s working)
+
+First, confirm your shell is actually using the shims:
+
+```sh
+export PATH="$HOME/.local/share/ackchyually/shims:$PATH"
+hash -r
+
+which git
+# ~/.local/share/ackchyually/shims/git
+```
+
+Then, after you’ve run a successful command at least once in this repo/context, ackchyually can help when you make a “usage-ish” mistake:
+
+```sh
+$ git log -1 --pretty=%s
+fix: something
+
+$ git log -1 --prety=%s
+error: unknown option `prety=%s'
+usage: git log [<options>] [<revision-range>] [[--] <path>...]
+ackchyually: this worked before here:
+  git log -1 --pretty=%s
+```
+
+Optional auto-exec (off by default):
+
+```sh
+$ export ACKCHYUALLY_AUTO_EXEC=known_success
+$ git log -1 --prety=%s
+ackchyually: auto-exec (known_success):
+  git log -1 --pretty=%s
+fix: something
+```
+
 ## How it works
 - Transparent PATH shims (busybox-style symlinks) so you keep typing `git ...` normally.
 - Logs invocations to a local SQLite DB (redacted) keyed by repo/cwd context (`~/.local/share/ackchyually/ackchyually.sqlite`).

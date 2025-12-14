@@ -51,6 +51,12 @@ type Command struct {
 }
 
 type Expectation struct {
+	// BadExitCode, when set, is the expected exit code for the "bad" command.
+	// When unset, the harness expects the bad command to exit non-zero.
+	BadExitCode *int
+	// BadOutputContain, when set, must appear in the "bad" command output.
+	BadOutputContain string
+
 	FinalExitCode      int
 	FinalStdoutContain string
 }
@@ -189,6 +195,20 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 	badOut, badErr := env.RunShim(s.Tool, s.Bad.Args...)
 	steps++
 
+	badExit := exitCode(badErr)
+	badOK := true
+	switch {
+	case s.Expect.BadExitCode == nil:
+		if badExit == 0 {
+			badOK = false
+		}
+	case badExit != *s.Expect.BadExitCode:
+		badOK = false
+	}
+	if badOK && s.Expect.BadOutputContain != "" && !strings.Contains(badOut, s.Expect.BadOutputContain) {
+		badOK = false
+	}
+
 	suggested, suggestionPrinted := ExtractSuggestion(badOut)
 
 	finalOut := ""
@@ -219,20 +239,19 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		return RunResult{Mode: mode, Error: err.Error()}
 	}
 
-	success := finalExit == s.Expect.FinalExitCode
+	success := badOK && finalExit == s.Expect.FinalExitCode
 	if success && s.Expect.FinalStdoutContain != "" && !strings.Contains(finalOut, s.Expect.FinalStdoutContain) {
-		success = false
-	}
-
-	if badErr == nil {
-		// The "bad" command unexpectedly succeeded; treat as a harness failure.
 		success = false
 	}
 
 	errMsg := ""
 	switch {
-	case badErr == nil:
-		errMsg = "bad command unexpectedly succeeded"
+	case !badOK && s.Expect.BadExitCode == nil && badExit == 0:
+		errMsg = "bad command unexpectedly exited 0"
+	case !badOK && s.Expect.BadExitCode != nil && badExit != *s.Expect.BadExitCode:
+		errMsg = fmt.Sprintf("bad exit code %d (want %d)", badExit, *s.Expect.BadExitCode)
+	case !badOK && s.Expect.BadOutputContain != "" && !strings.Contains(badOut, s.Expect.BadOutputContain):
+		errMsg = fmt.Sprintf("bad output missing %q", s.Expect.BadOutputContain)
 	case finalExit != s.Expect.FinalExitCode:
 		errMsg = fmt.Sprintf("final exit code %d (want %d)", finalExit, s.Expect.FinalExitCode)
 	case s.Expect.FinalStdoutContain != "" && !strings.Contains(finalOut, s.Expect.FinalStdoutContain):

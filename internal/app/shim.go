@@ -42,6 +42,12 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 	}
 	dur := time.Since(start)
 
+	usageish := isUsageish(args, res.ExitCode, res)
+	exitForLog := res.ExitCode
+	if usageish && res.ExitCode == 0 {
+		exitForLog = 64
+	}
+
 	// redact argv before writing
 	r := redact.Default()
 	argvSafe := r.RedactArgs(append([]string{tool}, args...))
@@ -59,7 +65,7 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 			ExePath:      exe,
 			ToolID:       ti.ID,
 			ArgvJSON:     store.MustJSON(argvSafe),
-			ExitCode:     res.ExitCode,
+			ExitCode:     exitForLog,
 			Mode:         res.Mode,
 			StdoutTail:   stdoutTailSafe,
 			StderrTail:   stderrTailSafe,
@@ -69,7 +75,7 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 		_ = err // best-effort
 	}
 
-	if isUsageish(res.ExitCode, res) {
+	if usageish {
 		if allowAutoExec && autoExecKnownSuccessEnabled() && execx.IsTTY() {
 			if code, ok := autoExecKnownSuccess(tool, ctxKey, argvSafe); ok {
 				return code
@@ -81,14 +87,23 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 	return res.ExitCode
 }
 
-func isUsageish(code int, res execx.Result) bool {
+func isUsageish(args []string, code int, res execx.Result) bool {
+	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	if code == 0 {
-		return false
+		// Some tools print usage/errors but still exit 0. Don't treat explicit help
+		// invocations as failures.
+		if isHelpInvocationArgs(args) {
+			return false
+		}
+		return looksUsageish(t)
 	}
 	if code == 64 {
 		return true
 	}
-	t := res.StdoutTail + res.StderrTail + res.CombinedTail
+	return looksUsageish(t)
+}
+
+func looksUsageish(t string) bool {
 	return execx.ContainsFold(t, "usage:") ||
 		execx.ContainsFold(t, "usage of") ||
 		execx.ContainsFold(t, "flag provided but not defined") ||
@@ -114,6 +129,7 @@ func isUsageish(code int, res execx.Result) bool {
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " value")) ||
 		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " format")) ||
+		execx.ContainsFold(t, "unknown --write-out variable") ||
 		execx.ContainsFold(t, "url rejected") ||
 		execx.ContainsFold(t, "invalid regexp") ||
 		execx.ContainsFold(t, "not an integer") ||
@@ -139,6 +155,19 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required") ||
 		execx.ContainsFold(t, "missing colon separator")
+}
+
+func isHelpInvocationArgs(args []string) bool {
+	if len(args) > 0 && args[0] == "help" {
+		return true
+	}
+	for _, a := range args {
+		switch a {
+		case "-h", "--help", "-help":
+			return true
+		}
+	}
+	return false
 }
 
 func pickKnownGood(cands []store.SuccessCandidate, argvSafe []string) []string {

@@ -77,7 +77,9 @@ Site lives in `site/`, deployed via GitHub Pages.
 Install script source: `scripts/install.sh`
 Deployed copy: `site/install.sh`
 
-Sync:
+The Pages workflow syncs `scripts/install.sh` → `site/install.sh` before deploy.
+
+Manual sync (for local preview):
 ```sh
 just site-sync-install
 ```

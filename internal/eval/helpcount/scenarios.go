@@ -37,6 +37,7 @@ func BuiltinScenarios() []Scenario {
 		gitDiffInvalidDiffAlgorithmScenario(),
 		gitDiffInvalidStatValueScenario(),
 		curlUnknownOptionScenario(),
+		curlUnknownWriteOutVarScenario(),
 		curlMissingOptionValueScenario(),
 		curlInvalidURLScenario(),
 		goEnvWriteKeyValueScenario(),
@@ -463,6 +464,24 @@ func curlUnknownOptionScenario() Scenario {
 	}
 }
 
+func curlUnknownWriteOutVarScenario() Scenario {
+	return Scenario{
+		Name:        "curl_unknown_write_out_var",
+		Description: "Run curl with an unknown --write-out variable (curl exits 0; seeded vs unseeded).",
+		Tool:        "curl",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
+		Bad:         Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "%{fial}", "file:///etc/hosts"}}, //nolint:misspell // intentional typo scenario
+		Help:        Command{Args: []string{"--help"}},
+		Expect: Expectation{
+			BadExitCode:        intPtr(0),
+			BadOutputContain:   "unknown --write-out variable",
+			FinalExitCode:      0,
+			FinalStdoutContain: "ok",
+		},
+	}
+}
+
 func curlMissingOptionValueScenario() Scenario {
 	return Scenario{
 		Name:        "curl_missing_option_value",
@@ -478,6 +497,8 @@ func curlMissingOptionValueScenario() Scenario {
 		},
 	}
 }
+
+func intPtr(v int) *int { return &v }
 
 func curlInvalidURLScenario() Scenario {
 	return Scenario{

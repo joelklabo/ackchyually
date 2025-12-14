@@ -5,6 +5,26 @@ REPO="joelklabo/ackchyually"
 BIN="ackchyually"
 BASE_URL="https://github.com/${REPO}/releases"
 
+say() { printf '%s\n' "$*"; }
+
+supports_color() {
+  [ -t 1 ] && [ "${NO_COLOR:-}" = "" ] && [ "${TERM:-}" != "dumb" ]
+}
+
+# Optional ANSI styling for nicer UX (falls back to plain text).
+BOLD=""
+DIM=""
+GREEN=""
+YELLOW=""
+RESET=""
+if supports_color; then
+  BOLD="$(printf '\033[1m')"
+  DIM="$(printf '\033[2m')"
+  GREEN="$(printf '\033[32m')"
+  YELLOW="$(printf '\033[33m')"
+  RESET="$(printf '\033[0m')"
+fi
+
 usage() {
   echo "usage: install.sh [-b bindir] [version]" >&2
   exit 2
@@ -81,13 +101,31 @@ DATA_DIR="${HOME}/.local/share/ackchyually"
 SHIM_DIR="${DATA_DIR}/shims"
 mkdir -p "$SHIM_DIR"
 
-echo "Installed $BIN to $BINDIR"
+say ""
+say "${GREEN}${BOLD}Installed${RESET} ${BOLD}${BIN}${RESET}"
+say "  bin:   $BINDIR/$BIN"
+say "  shims: $SHIM_DIR"
 
 case ":$PATH:" in
   *":$BINDIR:"*) ;;
-  *) echo "Add to PATH: export PATH=\"$BINDIR:\$PATH\"" ;;
+  *)
+    say ""
+    say "${YELLOW}${BOLD}To run ${BIN} now, add it to PATH:${RESET}"
+    say "  export PATH=\"$BINDIR:\$PATH\""
+    ;;
 esac
 
-echo "Shims live in: $SHIM_DIR"
-echo "Next: $BIN shim install git gh xcodebuild"
-echo "Ensure PATH begins with shims: export PATH=\"$SHIM_DIR:\$PATH\""
+say ""
+say "${BOLD}Next (required): put shims first in PATH${RESET}"
+say "  export PATH=\"$SHIM_DIR:\$PATH\""
+say "  # for future shells, add that line to your ~/.zshrc or ~/.bashrc"
+say "  hash -r 2>/dev/null || true"
+say ""
+say "${BOLD}Then install shims for tools you use:${RESET}"
+say "  $BIN shim install git gh xcodebuild"
+say ""
+say "${BOLD}Verify shims are active:${RESET}"
+say "  which gh"
+say "  # $SHIM_DIR/gh"
+say ""
+say "${DIM}If it prints something like /opt/homebrew/bin/gh, the shim dir isn't first in PATH.${RESET}"

@@ -83,6 +83,20 @@ export PATH="$HOME/.local/share/ackchyually/shims:$PATH"</code></pre>
       </section>
 
       <section>
+        <h2 class="h2">Example</h2>
+        <p class="p">If you’ve run a command successfully before in this repo/context, a later “usage-ish” failure triggers a suggestion:</p>
+        <div class="cmd-card">
+          <pre><code>export PATH="$HOME/.local/share/ackchyually/shims:$PATH"
+which git
+# ~/.local/share/ackchyually/shims/git
+
+git log -1 --prety=%s
+ackchyually: this worked before here:
+  git log -1 --pretty=%s</code></pre>
+        </div>
+      </section>
+
+      <section>
         <h2 class="h2">How it works</h2>
         <ul class="bullets">
           <li><strong>Transparent shims:</strong> you keep typing <code>git ...</code> normally.</li>
