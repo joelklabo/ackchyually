@@ -98,6 +98,7 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "unknown subcommand") ||
 		execx.ContainsFold(t, "for usage") ||
 		(execx.ContainsFold(t, "is not a") && execx.ContainsFold(t, "command") && execx.ContainsFold(t, "--help")) ||
+		(execx.ContainsFold(t, "option") && execx.ContainsFold(t, "is unknown")) ||
 		execx.ContainsFold(t, "requires a value") ||
 		execx.ContainsFold(t, "requires an argument") ||
 		execx.ContainsFold(t, "requires at least") ||
@@ -105,8 +106,10 @@ func isUsageish(code int, res execx.Result) bool {
 		execx.ContainsFold(t, "unrecognized option") ||
 		execx.ContainsFold(t, "unrecognized argument") ||
 		execx.ContainsFold(t, "invalid option") ||
+		(execx.ContainsFold(t, "invalid --") && execx.ContainsFold(t, " option")) ||
 		execx.ContainsFold(t, "invalid regexp") ||
 		execx.ContainsFold(t, "not an integer") ||
+		execx.ContainsFold(t, "unknown date format") ||
 		execx.ContainsFold(t, "needed a single revision") ||
 		execx.ContainsFold(t, "missing required")
 }

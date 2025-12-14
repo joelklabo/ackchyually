@@ -12,10 +12,13 @@ func BuiltinScenarios() []Scenario {
 		gitLogSubjectNoiseScenario(),
 		gitLogSubjectConfusingNoiseScenario(),
 		gitLogInvalidCountScenario(),
+		gitLogUnknownDateFormatScenario(),
+		gitLogInvalidDecorateOptionScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
+		curlUnknownOptionScenario(),
 		goTestCountScenario(),
 		goTestUnknownFlagScenario(),
 		goTestUnknownFlagNoiseScenario(),
@@ -97,6 +100,26 @@ func gitLogInvalidCountScenario() Scenario {
 	return s
 }
 
+func gitLogUnknownDateFormatScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_unknown_date_format"
+	s.Description = "Run git log with an unknown --date format value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--date=short", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--date=bananas", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
+func gitLogInvalidDecorateOptionScenario() Scenario {
+	s := gitLogSubjectScenario()
+	s.Name = "git_log_invalid_decorate_option"
+	s.Description = "Run git log with an invalid --decorate option value (seeded vs unseeded)."
+	s.Seed = Command{Args: []string{"log", "-1", "--decorate=short", "--pretty=%s"}}
+	s.Bad = Command{Args: []string{"log", "-1", "--decorate=bananas", "--pretty=%s"}}
+	s.Help = Command{Args: []string{"log", "-h"}}
+	return s
+}
+
 func gitRevParseMissingRevisionScenario() Scenario {
 	return Scenario{
 		Name:        "git_rev_parse_missing_revision",
@@ -136,6 +159,22 @@ func gitRevParseMissingRevisionScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "refs/heads/main",
+		},
+	}
+}
+
+func curlUnknownOptionScenario() Scenario {
+	return Scenario{
+		Name:        "curl_unknown_option",
+		Description: "Run curl with an unknown option (seeded vs unseeded).",
+		Tool:        "curl",
+		Setup:       func(_ *Env) error { return nil },
+		Seed:        Command{Args: []string{"-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}},
+		Bad:         Command{Args: []string{"--fial", "-fsSL", "-o", "/dev/null", "-w", "ok", "file:///etc/hosts"}}, //nolint:misspell // intentional typo scenario
+		Help:        Command{Args: []string{"--help"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "ok",
 		},
 	}
 }
