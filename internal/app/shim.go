@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/joelklabo/ackchyually/internal/contextkey"
@@ -15,6 +16,10 @@ import (
 )
 
 func RunShim(tool string, args []string) int {
+	return runShim(tool, args, true)
+}
+
+func runShim(tool string, args []string, allowAutoExec bool) int {
 	exe, err := execx.WhichSkippingShims(tool)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ackchyually:", err)
@@ -65,6 +70,11 @@ func RunShim(tool string, args []string) int {
 	}
 
 	if isUsageish(res.ExitCode, res) {
+		if allowAutoExec && autoExecKnownSuccessEnabled() && execx.IsTTY() {
+			if code, ok := autoExecKnownSuccess(tool, ctxKey, argvSafe); ok {
+				return code
+			}
+		}
 		suggestKnownGood(tool, ctxKey)
 	}
 
@@ -97,4 +107,61 @@ func suggestKnownGood(tool, ctxKey string) {
 	}); err != nil {
 		_ = err // best-effort
 	}
+}
+
+func autoExecKnownSuccessEnabled() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv("ACKCHYUALLY_AUTO_EXEC")))
+	return v == "known_success"
+}
+
+func autoExecKnownSuccess(tool, ctxKey string, argvSafe []string) (int, bool) {
+	var cmd []string
+	if err := store.WithDB(func(db *store.DB) error {
+		cmds, err := db.ListSuccessful(tool, ctxKey, 1)
+		if err != nil {
+			return err
+		}
+		if len(cmds) == 0 {
+			return nil
+		}
+		cmd = cmds[0]
+		return nil
+	}); err != nil {
+		return 0, false
+	}
+
+	if len(cmd) == 0 {
+		return 0, false
+	}
+	if containsRedacted(cmd) {
+		return 0, false
+	}
+	if slicesEqual(cmd, argvSafe) {
+		return 0, false
+	}
+
+	fmt.Fprintln(os.Stderr, "ackchyually: auto-exec (known_success):")
+	fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(cmd))
+	return runShim(cmd[0], cmd[1:], false), true
+}
+
+func containsRedacted(argv []string) bool {
+	for _, a := range argv {
+		if strings.Contains(a, "<redacted>") {
+			return true
+		}
+	}
+	return false
+}
+
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

@@ -281,7 +281,7 @@ func exportNormalizeContextKey(ctxKey, home string) string {
 	if !ok {
 		return ctxKey
 	}
-	path = exportNormalizePath(path, home, "")
+	path = exportSanitizeValue(path, home, "")
 	return prefix + ":" + path
 }
 
@@ -291,7 +291,7 @@ func exportNormalizeArgv(argv []string, home, repoRoot string) []string {
 	}
 	out := make([]string, 0, len(argv))
 	for _, a := range argv {
-		out = append(out, exportNormalizePath(a, home, repoRoot))
+		out = append(out, exportSanitizeArg(a, home, repoRoot))
 	}
 	return out
 }

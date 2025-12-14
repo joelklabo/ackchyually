@@ -28,13 +28,38 @@ func Identify(exe string) (ToolIdentity, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	sha, err := sha256File(exe)
+	st, err := os.Stat(exe)
 	if err != nil {
 		return ToolIdentity{}, err
 	}
+	size := st.Size()
+	mtimeNS := st.ModTime().UnixNano()
 
 	var ti ToolIdentity
 	err = store.WithDB(func(db *store.DB) error {
+		sha := ""
+		cached, err2 := db.GetToolPathCache(exe)
+		if err2 == nil {
+			if cached.FileSize == size && cached.FileMtimeNS == mtimeNS {
+				sha = cached.SHA256
+			}
+		}
+		if sha == "" {
+			sha2, err3 := sha256File(exe)
+			if err3 != nil {
+				return err3
+			}
+			sha = sha2
+			if err := db.UpsertToolPathCache(store.ToolPathCache{
+				ExePath:     exe,
+				FileSize:    size,
+				FileMtimeNS: mtimeNS,
+				SHA256:      sha,
+			}); err != nil {
+				_ = err // best-effort
+			}
+		}
+
 		found, err2 := db.GetToolBySHA(sha)
 		if err2 == nil && found.ID != 0 {
 			ti = ToolIdentity{
