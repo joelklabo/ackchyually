@@ -16,6 +16,7 @@ func BuiltinScenarios() []Scenario {
 		gitLogInvalidDecorateOptionScenario(),
 		gitRevParseMissingRevisionScenario(),
 		gitShowUnknownRevisionScenario(),
+		gitConfigWrongNumberOfArgsScenario(),
 		gitStatusTypoScenario(),
 		gitCommitMissingValueScenario(),
 		gitDiffNameOnlyScenario(),
@@ -316,6 +317,39 @@ func gitCommitMissingValueScenario() Scenario {
 		Expect: Expectation{
 			FinalExitCode:      0,
 			FinalStdoutContain: "seed from eval",
+		},
+	}
+}
+
+func gitConfigWrongNumberOfArgsScenario() Scenario {
+	return Scenario{
+		Name:        "git_config_wrong_number_of_args",
+		Description: "Run git config with a missing argument (seeded vs unseeded).",
+		Tool:        "git",
+		Setup: func(env *Env) error {
+			repo := filepath.Join(env.WorkDir, "repo")
+			if err := os.MkdirAll(repo, 0o755); err != nil {
+				return err
+			}
+			env.WorkDir = repo
+
+			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
+				return fmt.Errorf("git init: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.email", "eval@example.com"); err != nil {
+				return fmt.Errorf("git config user.email: %w", err)
+			}
+			if _, err := env.RunDirect("git", "config", "user.name", "Eval"); err != nil {
+				return fmt.Errorf("git config user.name: %w", err)
+			}
+			return nil
+		},
+		Seed: Command{Args: []string{"config", "user.name"}},
+		Bad:  Command{Args: []string{"config", "--add", "user.name"}},
+		Help: Command{Args: []string{"config", "-h"}},
+		Expect: Expectation{
+			FinalExitCode:      0,
+			FinalStdoutContain: "Eval",
 		},
 	}
 }
