@@ -15,7 +15,7 @@
 ![Codecov](https://img.shields.io/codecov/c/github/joelklabo/ackchyually)
 ![Downloads](https://img.shields.io/github/downloads/joelklabo/ackchyually/total)
 
-The annoying nerd coworker for your CLI. Remembers what worked (per repo). Suggests the right command when you get the details wrong.
+**ackchyually** — the “ackchyually…” friend for your CLI. Remembers what worked (per repo). Suggests the right command when you get the details wrong.
 
 ## PTY-first (hard requirement)
 If you're in a TTY, ackchyually runs tools under a real PTY. This is non-negotiable for interactive CLIs and agent shells (Claude Code / Codex CLI / Copilot CLI).
