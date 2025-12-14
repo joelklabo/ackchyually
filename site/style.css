@@ -121,16 +121,18 @@ code, pre {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
-.cmd-card__header {
+.copy-btn { flex-shrink: 0; }
+
+.cmd-card__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.cmd-card__header .cmd-card__label { margin-bottom: 0; }
-
-.copy-btn { flex-shrink: 0; }
+.cmd-card__row pre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 .cmd-card__label {
   display: inline-block;
