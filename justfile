@@ -16,6 +16,11 @@ cover:
   go test ./... -coverprofile=coverage.out -covermode=atomic
   go tool cover -func=coverage.out | tail -n 1
 
+cover-product:
+  pkgs="$(go list ./... | awk '!/\/cmd\/ackchyually-eval/ && !/\/internal\/testtools/ && !/\/internal\/eval/ {print}')" && \
+    go test $pkgs -coverprofile=coverage.out -covermode=atomic && \
+    go tool cover -func=coverage.out | tail -n 1
+
 lint:
   golangci-lint run
 

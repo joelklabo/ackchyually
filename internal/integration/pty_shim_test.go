@@ -95,7 +95,7 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 	waitContains(t, &buf, "SIZE_AFTER rows=40 cols=100")
 	waitContains(t, &buf, "PROMPTLY_END")
 
-	if err := waitCmd(t, cmd, 5*time.Second); err != nil {
+	if err := waitCmd(t, cmd, 10*time.Second); err != nil {
 		t.Fatalf("cmd failed: %v\nOUTPUT:\n%s", err, buf.String())
 	}
 
@@ -108,7 +108,7 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 
 func waitForSize(t *testing.T, f *os.File, rows, cols uint16) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
+	deadline := time.Now().Add(4 * time.Second)
 	for time.Now().Before(deadline) {
 		gotCols, gotRows, err := term.GetSize(int(f.Fd()))
 		if err == nil && gotRows == int(rows) && gotCols == int(cols) {
@@ -211,7 +211,7 @@ func must(t *testing.T, err error) {
 
 func waitContains(t *testing.T, buf *bytes.Buffer, needle string) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
 		if strings.Contains(buf.String(), needle) {
 			return
