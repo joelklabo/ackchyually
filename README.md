@@ -20,8 +20,6 @@
 ## PTY-first (hard requirement)
 If you're in a TTY, ackchyually runs tools under a real PTY. This is non-negotiable for interactive CLIs and agent shells (Claude Code / Codex CLI / Copilot CLI).
 
-> **ackchyually:** PTY mode on (interactive).
-
 ## Install
 
 ### One-liner
