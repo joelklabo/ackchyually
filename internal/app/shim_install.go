@@ -62,7 +62,11 @@ func shimInstall(tools []string) int {
 	switch {
 	case found == 0:
 		fmt.Printf("%s: shim dir is first in PATH\n", u.OK("OK"))
-		fmt.Printf("%s: persist this with: ackchyually shim enable\n", u.Dim("Tip"))
+		if rcPath, ok := detectPersistedShims(shimDir); ok {
+			fmt.Printf("%s: shims are enabled in: %s\n", u.OK("OK"), rcPath)
+		} else {
+			fmt.Printf("%s: persist this with: ackchyually shim enable\n", u.Dim("Tip"))
+		}
 	case found == -1:
 		fmt.Printf("%s: put shim dir first in PATH\n", u.Warn("Required"))
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
