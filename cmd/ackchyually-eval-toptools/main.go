@@ -184,6 +184,9 @@ func run() int {
 			fmt.Fprintln(os.Stderr, err)
 			return 2
 		}
+		if r.Fail > 0 {
+			return 1
+		}
 		return 0
 	}
 
