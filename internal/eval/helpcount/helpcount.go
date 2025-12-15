@@ -59,6 +59,13 @@ type Expectation struct {
 
 	FinalExitCode      int
 	FinalStdoutContain string
+
+	// Optional expectations for baseline vs memory runs.
+	// Useful for eval regression tests (to ensure we actually reduced help usage).
+	BaselineHelpInvocations *int
+	MemoryHelpInvocations   *int
+	BaselineSuggestionUsed  *bool
+	MemorySuggestionUsed    *bool
 }
 
 type Report struct {
@@ -258,6 +265,32 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		errMsg = fmt.Sprintf("final output missing %q", s.Expect.FinalStdoutContain)
 	case suggestionPrinted && suggested == "":
 		errMsg = "ackchyually printed suggestion header but no command line"
+	}
+
+	if success {
+		wantHelpInv := (*int)(nil)
+		wantSuggested := (*bool)(nil)
+		switch mode {
+		case ModeBaseline:
+			wantHelpInv = s.Expect.BaselineHelpInvocations
+			wantSuggested = s.Expect.BaselineSuggestionUsed
+		case ModeMemory:
+			wantHelpInv = s.Expect.MemoryHelpInvocations
+			wantSuggested = s.Expect.MemorySuggestionUsed
+		}
+
+		switch {
+		case wantHelpInv != nil && helpInv != *wantHelpInv:
+			success = false
+			errMsg = fmt.Sprintf("help invocations=%d (want %d)", helpInv, *wantHelpInv)
+		case wantSuggested != nil && suggestionUsed != *wantSuggested:
+			success = false
+			if *wantSuggested {
+				errMsg = "expected suggestion to be used"
+			} else {
+				errMsg = "expected no suggestion to be used"
+			}
+		}
 	}
 
 	return RunResult{

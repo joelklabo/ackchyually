@@ -45,5 +45,16 @@ dev-local:
 eval-helpcount:
   go run ./cmd/ackchyually-eval
 
+eval-toptools-dry:
+  go run ./cmd/ackchyually-eval-toptools -dry-run
+
+eval-toptools:
+  @echo "WARNING: this is a large smoke test. Add -install to install missing Homebrew formulae."
+  go run ./cmd/ackchyually-eval-toptools
+
+eval-toptools-install:
+  @echo "WARNING: this will install many Homebrew formulae (slow/expensive)."
+  go run ./cmd/ackchyually-eval-toptools -install
+
 site-sync-install:
   cp scripts/install.sh site/install.sh
