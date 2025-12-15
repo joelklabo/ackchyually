@@ -1,3 +1,5 @@
+version: 2
+
 project_name: ackchyually
 
 before:
@@ -10,11 +12,16 @@ builds:
     binary: ackchyually
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/joelklabo/ackchyually/internal/app.buildVersion={{.Version}}
+      - -X github.com/joelklabo/ackchyually/internal/app.buildCommit={{.Commit}}
+      - -X github.com/joelklabo/ackchyually/internal/app.buildDate={{.Date}}
     goos: [darwin, linux]
     goarch: [amd64, arm64]
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
@@ -25,4 +32,3 @@ checksum:
 
 changelog:
   use: github
-
