@@ -90,19 +90,129 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 }
 
 func isUsageish(args []string, code int, res execx.Result) bool {
-	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	if code == 0 {
 		// Some tools print usage/errors but still exit 0. Don't treat explicit help
-		// invocations as failures.
+		// invocations as failures. Be conservative here because many tools can emit
+		// structured output (e.g., JSON) that may contain strings like "Usage:".
 		if isHelpInvocationArgs(args) {
 			return false
 		}
-		return looksUsageish(t)
+		return looksUsageishOnSuccess(res)
 	}
 	if code == 64 {
 		return true
 	}
+	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	return looksUsageish(t)
+}
+
+func looksUsageishOnSuccess(res execx.Result) bool {
+	var t string
+	switch res.Mode {
+	case "pipes":
+		t = res.StderrTail
+		if strings.TrimSpace(t) == "" {
+			t = res.StdoutTail
+		}
+	case "pty":
+		t = res.CombinedTail
+	default:
+		t = res.StderrTail
+		if strings.TrimSpace(t) == "" {
+			t = res.StdoutTail
+		}
+		if strings.TrimSpace(t) == "" {
+			t = res.CombinedTail
+		}
+	}
+	return looksUsageishLineStart(t)
+}
+
+func looksUsageishLineStart(t string) bool {
+	for _, line := range strings.Split(t, "\n") {
+		l := strings.TrimSpace(line)
+		if l == "" {
+			continue
+		}
+
+		// Avoid treating structured data (common for successful exit=0) as an error.
+		if strings.HasPrefix(l, "{") || strings.HasPrefix(l, "[") {
+			continue
+		}
+		if strings.HasPrefix(l, "\"") && strings.Contains(l, "\":") {
+			continue
+		}
+
+		if looksUsageishPrefix(l) {
+			return true
+		}
+		if rest, ok := stripToolPrefix(l); ok && looksUsageishPrefix(rest) {
+			return true
+		}
+	}
+	return false
+}
+
+func looksUsageishPrefix(line string) bool {
+	l := strings.ToLower(strings.TrimSpace(line))
+	switch {
+	case strings.HasPrefix(l, "usage:"),
+		strings.HasPrefix(l, "usage of"),
+		strings.HasPrefix(l, "flag provided but not defined"),
+		strings.HasPrefix(l, "unknown flag"),
+		strings.HasPrefix(l, "unknown shorthand flag"),
+		strings.HasPrefix(l, "unknown command"),
+		strings.HasPrefix(l, "unknown subcommand"),
+		strings.HasPrefix(l, "unknown option"),
+		strings.HasPrefix(l, "unknown --write-out variable"),
+		strings.HasPrefix(l, "unrecognized option"),
+		strings.HasPrefix(l, "unrecognized argument"),
+		strings.HasPrefix(l, "invalid option"),
+		strings.HasPrefix(l, "invalid --"),
+		strings.HasPrefix(l, "url rejected"),
+		strings.HasPrefix(l, "invalid regexp"),
+		strings.HasPrefix(l, "requires a value"),
+		strings.HasPrefix(l, "requires an argument"),
+		strings.HasPrefix(l, "requires parameter"),
+		strings.HasPrefix(l, "requires at least"),
+		strings.HasPrefix(l, "requires exactly"),
+		strings.HasPrefix(l, "wrong number of arguments"),
+		strings.HasPrefix(l, "missing required"),
+		strings.HasPrefix(l, "must be absolute path"),
+		strings.HasPrefix(l, "only one reference expected"),
+		strings.HasPrefix(l, "needed a single revision"),
+		strings.HasPrefix(l, "missing colon separator"),
+		strings.HasPrefix(l, "error:"),
+		strings.HasPrefix(l, "fatal:"),
+		(strings.HasPrefix(l, "try '") && strings.Contains(l, "--help")):
+		return true
+	}
+	return false
+}
+
+func stripToolPrefix(line string) (string, bool) {
+	i := strings.IndexByte(line, ':')
+	if i <= 0 {
+		return "", false
+	}
+	prefix := line[:i]
+	if strings.Contains(prefix, " ") {
+		return "", false
+	}
+	for _, r := range prefix {
+		if (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			r == '_' || r == '-' || r == '.' || r == '/' {
+			continue
+		}
+		return "", false
+	}
+	rest := strings.TrimSpace(line[i+1:])
+	if rest == "" {
+		return "", false
+	}
+	return rest, true
 }
 
 func looksUsageish(t string) bool {
