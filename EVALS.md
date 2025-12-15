@@ -42,3 +42,37 @@ Guidelines:
 - Use real system tools when possible (e.g. `git`, `go`) so the behavior matches real-world agent sessions.
 - Keep scenarios non-interactive and deterministic (no prompts).
 - In baseline mode, avoid running successful tool invocations through shims during setup (or you'll accidentally seed memory).
+
+## Toptools smoke eval
+
+Smoke-tests that shimming popular CLI tools doesn't break basic, non-interactive invocations.
+
+On macOS, this eval uses Homebrew analytics to pick up to `-count` distinct executables from installed formulae, then probes each tool
+for a working `--version`/`--help`-style invocation and verifies the shimmed behavior matches the direct behavior (exit code, no unexpected
+`ackchyually: suggestion` output, etc).
+
+### Run
+
+Dry-run (prints selected executables):
+
+```sh
+just eval-toptools-dry
+```
+
+Run with defaults:
+
+```sh
+just eval-toptools
+```
+
+Tune count / timeout:
+
+```sh
+go run ./cmd/ackchyually-eval-toptools -count 250 -timeout 5s
+```
+
+Optional (slow/expensive): install missing formulae while selecting tools:
+
+```sh
+just eval-toptools-install
+```

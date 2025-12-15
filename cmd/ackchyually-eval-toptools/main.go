@@ -60,7 +60,7 @@ func run() int {
 	var (
 		count     = flag.Int("count", 250, "number of distinct executables to smoke-test")
 		install   = flag.Bool("install", false, "brew install missing formulae (slow/expensive)")
-		timeout   = flag.Duration("timeout", 3*time.Second, "per-command timeout")
+		timeout   = flag.Duration("timeout", 5*time.Second, "per-command timeout")
 		dryRun    = flag.Bool("dry-run", false, "print selected executables and exit")
 		jsonOut   = flag.Bool("json", false, "output JSON report")
 		skipFile  = flag.String("skip-file", "", "optional newline-delimited formula skip list")
