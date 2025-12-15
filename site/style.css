@@ -30,6 +30,11 @@ body {
 a { color: inherit; }
 a:visited { color: inherit; }
 a:hover { color: var(--ack-red); }
+a:focus-visible {
+  outline: 3px solid rgba(85, 157, 182, 0.55);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -67,6 +72,16 @@ code, pre {
   display: flex;
   gap: 14px;
   font-size: 14px;
+}
+
+.nav__links a {
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.nav__links a:hover {
+  background: rgba(255, 45, 45, 0.08);
 }
 
 .hero {
