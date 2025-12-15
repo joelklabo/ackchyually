@@ -29,12 +29,17 @@ install-local:
   go install ./cmd/ackchyually
 
 dev-local:
-  go install ./cmd/ackchyually
+  @go install ./cmd/ackchyually
+  @echo ""
+  @echo "ackchyually (local build)"
+  @echo ""
   @echo "which ackchyually"
   @which ackchyually || true
-  @echo "$(go env GOPATH)/bin/ackchyually version"
+  @echo ""
+  @echo "ackchyually version"
   @$(go env GOPATH)/bin/ackchyually version
-  @echo "$(go env GOPATH)/bin/ackchyually shim doctor"
+  @echo ""
+  @echo "ackchyually shim doctor"
   @$(go env GOPATH)/bin/ackchyually shim doctor || true
 
 eval-helpcount:
