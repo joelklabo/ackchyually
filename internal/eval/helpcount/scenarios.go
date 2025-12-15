@@ -16,6 +16,7 @@ func BuiltinScenarios() []Scenario {
 		ansiExit0Scenario(),
 		clapUnexpectedArgScenario(),
 		attachedShortFlagScenario(),
+		flagTypoPrefersSpecificSuccessScenario(),
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
 		gitLogSubjectConfusingNoiseScenario(),

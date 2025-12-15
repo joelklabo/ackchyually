@@ -45,6 +45,7 @@ func run() int {
 		return 2
 	}
 
+	exit := reportExitCode(report)
 	if *jsonOut {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -52,11 +53,11 @@ func run() int {
 			fmt.Fprintln(os.Stderr, err)
 			return 2
 		}
-		return 0
+		return exit
 	}
 
 	printReport(report)
-	return 0
+	return exit
 }
 
 func printReport(r helpcount.Report) {
@@ -81,6 +82,18 @@ func printReport(r helpcount.Report) {
 			}
 		}
 	}
+}
+
+func reportExitCode(r helpcount.Report) int {
+	for _, s := range r.Results {
+		if s.Baseline != nil && !s.Baseline.Success {
+			return 1
+		}
+		if s.Memory != nil && !s.Memory.Success {
+			return 1
+		}
+	}
+	return 0
 }
 
 func repoRoot() (string, error) {

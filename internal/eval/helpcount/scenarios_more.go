@@ -317,6 +317,69 @@ esac
 	}
 }
 
+func flagTypoPrefersSpecificSuccessScenario() Scenario {
+	return Scenario{
+		Name:        "flag_typo_prefers_specific_success",
+		Description: "When both plain and --json worked, a later --jsn typo should suggest the --json variant (even if last success was plain).",
+		Tool:        "ranktool",
+		Setup: func(env *Env) error {
+			script := `#!/bin/sh
+set -eu
+
+case "${1:-}" in
+  list)
+    case "${2:-}" in
+      --help|-h|help)
+        echo "Usage: ranktool list [--json]"
+        exit 0
+        ;;
+      --json)
+        echo "OK format=json"
+        exit 0
+        ;;
+      "")
+        echo "OK format=plain"
+        exit 0
+        ;;
+      --jsn)
+        echo "Error: unknown flag: --jsn" 1>&2
+        echo "Usage: ranktool list [--json]" 1>&2
+        exit 2
+        ;;
+      *)
+        echo "Error: unknown argument: ${2}" 1>&2
+        echo "Usage: ranktool list [--json]" 1>&2
+        exit 2
+        ;;
+    esac
+    ;;
+  --version|version|-v|-V)
+    echo "ranktool 1.0.0"
+    exit 0
+    ;;
+  *)
+    echo "Usage: ranktool list [--json]" 1>&2
+    exit 2
+    ;;
+esac
+`
+			return writeToolScript(env, "ranktool", script)
+		},
+		Seed:  Command{Args: []string{"list", "--json"}},
+		Noise: []Command{{Args: []string{"list"}}},
+		Bad:   Command{Args: []string{"list", "--jsn"}}, //nolint:misspell // intentional typo scenario
+		Help:  Command{Args: []string{"list", "--help"}},
+		Expect: Expectation{
+			FinalExitCode:           0,
+			FinalStdoutContain:      "OK format=json",
+			BaselineHelpInvocations: intPtr(1),
+			MemoryHelpInvocations:   intPtr(0),
+			BaselineSuggestionUsed:  boolPtr(false),
+			MemorySuggestionUsed:    boolPtr(true),
+		},
+	}
+}
+
 func writeToolScript(env *Env, tool, script string) error {
 	bin := filepath.Join(env.WorkDir, "bin")
 	if err := os.MkdirAll(bin, 0o755); err != nil {
