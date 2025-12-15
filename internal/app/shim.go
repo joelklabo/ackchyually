@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/term"
+
 	"github.com/joelklabo/ackchyually/internal/contextkey"
 	"github.com/joelklabo/ackchyually/internal/execx"
 	"github.com/joelklabo/ackchyually/internal/redact"
@@ -88,19 +90,180 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 }
 
 func isUsageish(args []string, code int, res execx.Result) bool {
-	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	if code == 0 {
 		// Some tools print usage/errors but still exit 0. Don't treat explicit help
-		// invocations as failures.
+		// invocations as failures. Be conservative here because many tools can emit
+		// structured output (e.g., JSON) that may contain strings like "Usage:".
 		if isHelpInvocationArgs(args) {
 			return false
 		}
-		return looksUsageish(t)
+		return looksUsageishOnSuccess(res)
 	}
 	if code == 64 {
 		return true
 	}
+	t := res.StdoutTail + res.StderrTail + res.CombinedTail
 	return looksUsageish(t)
+}
+
+func looksUsageishOnSuccess(res execx.Result) bool {
+	var t string
+	switch res.Mode {
+	case "pipes":
+		t = res.StderrTail
+	case "pty":
+		t = res.CombinedTail
+	default:
+		t = res.StderrTail
+		if strings.TrimSpace(t) == "" {
+			t = res.CombinedTail
+		}
+	}
+	return looksUsageishLineStartOnSuccess(t)
+}
+
+func looksUsageishLineStartOnSuccess(t string) bool {
+	for _, line := range strings.Split(t, "\n") {
+		l := strings.TrimSpace(stripANSI(line))
+		if l == "" {
+			continue
+		}
+
+		// Avoid treating structured data (common for successful exit=0) as an error.
+		if strings.HasPrefix(l, "{") || strings.HasPrefix(l, "[") {
+			continue
+		}
+		if strings.HasPrefix(l, "\"") && strings.Contains(l, "\":") {
+			continue
+		}
+
+		if looksUsageishPrefixOnSuccess(l) {
+			return true
+		}
+		if rest, ok := stripToolPrefix(l); ok && looksUsageishPrefixOnSuccess(rest) {
+			return true
+		}
+	}
+	return false
+}
+
+func looksUsageishPrefixOnSuccess(line string) bool {
+	l := strings.ToLower(strings.TrimSpace(line))
+	switch {
+	case (strings.HasPrefix(l, "usage:") || strings.HasPrefix(l, "usage of")) && lineLooksLikeUsageBanner(l),
+		strings.HasPrefix(l, "flag provided but not defined"),
+		strings.HasPrefix(l, "unknown flag"),
+		strings.HasPrefix(l, "unknown shorthand flag"),
+		strings.HasPrefix(l, "unknown command"),
+		strings.HasPrefix(l, "unknown subcommand"),
+		strings.HasPrefix(l, "unknown option"),
+		strings.HasPrefix(l, "unknown --write-out variable"),
+		strings.HasPrefix(l, "unrecognized option"),
+		strings.HasPrefix(l, "unrecognized argument"),
+		strings.HasPrefix(l, "invalid option"),
+		strings.HasPrefix(l, "invalid --"),
+		strings.HasPrefix(l, "url rejected"),
+		strings.HasPrefix(l, "invalid regexp"),
+		strings.HasPrefix(l, "requires a value"),
+		strings.HasPrefix(l, "requires an argument"),
+		strings.HasPrefix(l, "requires parameter"),
+		strings.HasPrefix(l, "requires at least"),
+		strings.HasPrefix(l, "requires exactly"),
+		strings.HasPrefix(l, "wrong number of arguments"),
+		strings.HasPrefix(l, "missing required"),
+		strings.HasPrefix(l, "must be absolute path"),
+		strings.HasPrefix(l, "only one reference expected"),
+		strings.HasPrefix(l, "needed a single revision"),
+		strings.HasPrefix(l, "missing colon separator"),
+		(strings.HasPrefix(l, "error:") && lineLooksLikeCLIError(l)),
+		(strings.HasPrefix(l, "fatal:") && lineLooksLikeCLIError(l)),
+		(strings.HasPrefix(l, "try '") && strings.Contains(l, "--help")):
+		return true
+	}
+	return false
+}
+
+func stripToolPrefix(line string) (string, bool) {
+	i := strings.IndexByte(line, ':')
+	if i <= 0 {
+		return "", false
+	}
+	prefix := line[:i]
+	if strings.Contains(prefix, " ") {
+		return "", false
+	}
+	for _, r := range prefix {
+		if (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			r == '_' || r == '-' || r == '.' || r == '/' {
+			continue
+		}
+		return "", false
+	}
+	rest := strings.TrimSpace(line[i+1:])
+	if rest == "" {
+		return "", false
+	}
+	return rest, true
+}
+
+func lineLooksLikeUsageBanner(line string) bool {
+	// Avoid treating structured/text output that happens to start with "usage:" as a CLI
+	// invocation error. For a successful exit, require hints of actual usage syntax.
+	return strings.Contains(line, " --") ||
+		strings.ContainsAny(line, "[]<>") ||
+		strings.Contains(line, " -")
+}
+
+func lineLooksLikeCLIError(line string) bool {
+	// Avoid treating ordinary output ("ERROR: ...") as a CLI invocation error.
+	for _, s := range []string{
+		"unknown",
+		"invalid",
+		"requires",
+		"expected",
+		"flag",
+		"option",
+		"argument",
+		"command",
+		"subcommand",
+		"for usage",
+		"--help",
+		"-h",
+	} {
+		if strings.Contains(line, s) {
+			return true
+		}
+	}
+	return false
+}
+
+func stripANSI(s string) string {
+	if s == "" {
+		return s
+	}
+	out := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != 0x1b {
+			out = append(out, s[i])
+			continue
+		}
+		// CSI escape sequences (e.g. "\x1b[31m", "\x1b[1;4m").
+		if i+1 < len(s) && s[i+1] == '[' {
+			i += 2
+			for i < len(s) {
+				c := s[i]
+				if (c >= '0' && c <= '9') || c == ';' {
+					i++
+					continue
+				}
+				break
+			}
+			continue
+		}
+	}
+	return string(out)
 }
 
 func looksUsageish(t string) bool {
@@ -111,6 +274,7 @@ func looksUsageish(t string) bool {
 		execx.ContainsFold(t, "unknown shorthand flag") ||
 		execx.ContainsFold(t, "unknown command") ||
 		execx.ContainsFold(t, "unknown subcommand") ||
+		execx.ContainsFold(t, "unexpected argument") ||
 		execx.ContainsFold(t, "for usage") ||
 		(execx.ContainsFold(t, "try '") && execx.ContainsFold(t, "--help")) ||
 		(execx.ContainsFold(t, "is not a") && execx.ContainsFold(t, "command") && execx.ContainsFold(t, "--help")) ||
@@ -270,12 +434,30 @@ func fuzzyTokenMatch(a, b string) bool {
 func tokenVariants(arg string) []string {
 	a := strings.ToLower(arg)
 	out := []string{a}
+	if isAttachedNumericShortFlag(a) {
+		out = append(out, a[:2], a[2:])
+	}
 	if i := strings.IndexByte(a, '='); i > 0 && i < len(a)-1 {
 		out = append(out, a[:i], a[i+1:])
 	} else if i := strings.IndexByte(a, '='); i > 0 {
 		out = append(out, a[:i])
 	}
 	return out
+}
+
+func isAttachedNumericShortFlag(a string) bool {
+	if len(a) < 3 || a[0] != '-' || a[1] == '-' {
+		return false
+	}
+	if a[1] < 'a' || a[1] > 'z' {
+		return false
+	}
+	for i := 2; i < len(a); i++ {
+		if a[i] < '0' || a[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeFuzzyToken(s string) (string, bool) {
@@ -404,16 +586,29 @@ func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 		if err != nil {
 			return err
 		}
-		argv := pickKnownGood(cands, argvSafe)
-		if len(argv) == 0 {
+		if len(cands) == 0 {
+			suggestNoKnownGood(tool)
 			return nil
 		}
-		fmt.Fprintln(os.Stderr, "ackchyually: this worked before here:")
+		argv := pickKnownGood(cands, argvSafe)
+		if len(argv) == 0 {
+			suggestNoKnownGood(tool)
+			return nil
+		}
+		fmt.Fprintln(os.Stderr, "ackchyually: suggestion (previous success in this repo):")
 		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(argv))
 		return nil
 	}); err != nil {
 		_ = err // best-effort
 	}
+}
+
+func suggestNoKnownGood(tool string) {
+	if !term.IsTerminal(int(os.Stderr.Fd())) {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "ackchyually: no known-good %s command saved for this repo yet\n", tool)
+	fmt.Fprintf(os.Stderr, "ackchyually: run one successful %s command, then retry\n", tool)
 }
 
 func autoExecKnownSuccessEnabled() bool {

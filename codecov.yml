@@ -15,6 +15,7 @@ comment:
   require_changes: false
 
 ignore:
+  - "cmd/ackchyually-eval*/**"
+  - "internal/eval/**"
   - "internal/testtools/**"
   - "**/*_test.go"
-

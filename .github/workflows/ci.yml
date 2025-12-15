@@ -26,6 +26,9 @@ jobs:
           check-latest: true
           cache: true
 
+      - name: Verify installer script is synced
+        run: diff -u scripts/install.sh site/install.sh
+
       - name: Test (with coverage on ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: go test ./... -coverprofile=coverage.out -covermode=atomic

@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ackchyually</title>
+    <meta name="theme-color" content="#ff2d2d" />
     <meta
       name="description"
       content="the “ackchyually…” friend for your CLI. PTY-first. Remembers what worked and suggests the right command."
@@ -19,9 +20,18 @@
     />
     <meta property="og:url" content="https://ackchyually.sh/" />
     <meta property="og:image" content="https://ackchyually.sh/assets/ackchyually_social_1280x640.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="ackchyually — the “ackchyually…” friend for your CLI" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ackchyually" />
+    <meta
+      name="twitter:description"
+      content="the “ackchyually…” friend for your CLI. PTY-first. Remembers what worked and suggests the right command."
+    />
     <meta name="twitter:image" content="https://ackchyually.sh/assets/ackchyually_social_1280x640.png" />
+    <meta name="twitter:image:alt" content="ackchyually — the “ackchyually…” friend for your CLI" />
 
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -56,15 +66,21 @@
 
         <div class="cmd-card" aria-label="install">
           <div class="cmd-card__label">Install</div>
-          <pre><code>curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
-        </div>
-
-        <div class="callout-ack">
-          <strong>ackchyually:</strong> PTY mode on (interactive).
+          <div class="cmd-card__row">
+            <pre><code id="install-one-liner">curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
+            <button
+              class="btn btn-secondary btn-small copy-btn"
+              type="button"
+              data-copy-target="#install-one-liner"
+              aria-label="Copy install command"
+            >
+              Copy
+            </button>
+          </div>
         </div>
 
         <div class="btn-row">
-          <a class="btn btn-primary" href="https://github.com/joelklabo/ackchyually" rel="noopener noreferrer">GitHub</a>
+          <a class="btn btn-secondary" href="https://github.com/joelklabo/ackchyually" rel="noopener noreferrer">GitHub</a>
           <a class="btn btn-secondary" href="https://github.com/joelklabo/ackchyually/releases" rel="noopener noreferrer"
             >Releases</a
           >
@@ -91,7 +107,7 @@ which git
 # ~/.local/share/ackchyually/shims/git
 
 git log -1 --prety=%s
-ackchyually: this worked before here:
+ackchyually: suggestion (previous success in this repo):
   git log -1 --pretty=%s</code></pre>
         </div>
       </section>
@@ -125,5 +141,52 @@ ackchyually: this worked before here:
         <span class="muted">© 2025 ackchyually • MIT</span>
       </footer>
     </main>
+
+    <script>
+      (() => {
+        const setBtnText = (btn, text) => {
+          const original = btn.dataset.originalText || btn.textContent;
+          btn.dataset.originalText = original;
+          btn.textContent = text;
+          window.setTimeout(() => {
+            btn.textContent = original;
+          }, 1600);
+        };
+
+        const copyText = async (text) => {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-1000px";
+          ta.style.left = "-1000px";
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(ta);
+          if (!ok) throw new Error("copy failed");
+        };
+
+        document.querySelectorAll("[data-copy-target]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const sel = btn.getAttribute("data-copy-target");
+            const target = sel ? document.querySelector(sel) : null;
+            const text = (target && (target.textContent || "")).trim();
+            if (!text) return;
+            try {
+              await copyText(text);
+              setBtnText(btn, "Copied");
+            } catch {
+              setBtnText(btn, "Copy failed");
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>

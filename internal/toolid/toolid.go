@@ -105,6 +105,9 @@ func detectVersion(exe string) string {
 	for _, argv := range candidates {
 		ctx, cancel := context.WithTimeout(context.Background(), 800*time.Millisecond)
 		cmd := exec.CommandContext(ctx, exe, argv...)
+		// Avoid hanging on tools that prompt when invoked with an unexpected
+		// version flag (common for interactive CLIs).
+		cmd.Stdin = strings.NewReader("")
 		out, err := cmd.CombinedOutput()
 		cancel()
 		if ctx.Err() == context.DeadlineExceeded {
@@ -120,9 +123,62 @@ func detectVersion(exe string) string {
 		}
 
 		// Accept version-ish output even if the tool exits non-zero.
-		if err == nil || s != "" {
+		if looksVersionish(s) {
 			return base + " " + s
+		}
+
+		// If it failed and didn't look like a version string, try the next
+		// invocation pattern.
+		if err != nil {
+			continue
 		}
 	}
 	return base + " (version unknown)"
+}
+
+func looksVersionish(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+
+	ls := strings.ToLower(s)
+	if strings.Contains(ls, "version") {
+		return true
+	}
+
+	// Check for a simple version-like prefix on the first line:
+	//   v1
+	//   1
+	//   v1.2.3
+	//   1.2
+	line := s
+	if i := strings.IndexByte(line, '\n'); i != -1 {
+		line = line[:i]
+	}
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return false
+	}
+
+	i := 0
+	if line[0] == 'v' || line[0] == 'V' {
+		i++
+	}
+	if i >= len(line) || line[i] < '0' || line[i] > '9' {
+		return false
+	}
+	for i < len(line) && line[i] >= '0' && line[i] <= '9' {
+		i++
+	}
+	for i < len(line) && line[i] == '.' {
+		i++
+		if i >= len(line) || line[i] < '0' || line[i] > '9' {
+			return false
+		}
+		for i < len(line) && line[i] >= '0' && line[i] <= '9' {
+			i++
+		}
+	}
+	return true
 }

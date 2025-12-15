@@ -1,0 +1,50 @@
+name: Evals
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  helpcount:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24.x"
+          check-latest: true
+          cache: true
+
+      - name: Run helpcount eval
+        run: |
+          set -euo pipefail
+          go run ./cmd/ackchyually-eval -json > helpcount.json
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: helpcount-${{ github.run_id }}
+          path: helpcount.json
+          if-no-files-found: error
+
+  toptools:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24.x"
+          check-latest: true
+          cache: true
+
+      - name: Run toptools smoke
+        run: |
+          set -euo pipefail
+          go run ./cmd/ackchyually-eval-toptools -json -count 250 -timeout 5s > toptools.json
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: toptools-${{ github.run_id }}
+          path: toptools.json
+          if-no-files-found: error

@@ -20,8 +20,6 @@
 ## PTY-first (hard requirement)
 If you're in a TTY, ackchyually runs tools under a real PTY. This is non-negotiable for interactive CLIs and agent shells (Claude Code / Codex CLI / Copilot CLI).
 
-> **ackchyually:** PTY mode on (interactive).
-
 ## Install
 
 ### One-liner
@@ -76,7 +74,7 @@ fix: something
 $ git log -1 --prety=%s
 error: unknown option `prety=%s'
 usage: git log [<options>] [<revision-range>] [[--] <path>...]
-ackchyually: this worked before here:
+ackchyually: suggestion (previous success in this repo):
   git log -1 --pretty=%s
 ```
 
@@ -97,6 +95,8 @@ fix: something
 
 ## Commands
 - `ackchyually shim install <tool...>`
+- `ackchyually shim list`
+- `ackchyually shim enable`
 - `ackchyually shim uninstall <tool...>`
 - `ackchyually shim doctor`
 - `ackchyually best --tool <tool> "<query>"`

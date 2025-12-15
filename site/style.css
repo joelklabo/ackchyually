@@ -28,7 +28,13 @@ body {
 }
 
 a { color: inherit; }
+a:visited { color: inherit; }
 a:hover { color: var(--ack-red); }
+a:focus-visible {
+  outline: 3px solid rgba(85, 157, 182, 0.55);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -66,6 +72,16 @@ code, pre {
   display: flex;
   gap: 14px;
   font-size: 14px;
+}
+
+.nav__links a {
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.nav__links a:hover {
+  background: rgba(255, 45, 45, 0.08);
 }
 
 .hero {
@@ -120,6 +136,21 @@ code, pre {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
+.cmd-card__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.cmd-card__row pre {
+  min-width: 0;
+}
+
+.copy-btn {
+  justify-self: end;
+}
+
 .cmd-card__label {
   display: inline-block;
   margin-bottom: 8px;
@@ -136,17 +167,6 @@ code, pre {
   white-space: pre;
 }
 
-.callout-ack {
-  margin-top: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border: var(--border-strong);
-  border-left: 10px solid var(--ack-red);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
-}
-
-.callout-ack strong { color: var(--ack-red); }
-
 .btn-row {
   display: flex;
   flex-wrap: wrap;
@@ -157,6 +177,7 @@ code, pre {
 .btn {
   display: inline-block;
   text-decoration: none;
+  cursor: pointer;
   font-weight: 900;
   padding: 10px 14px;
   border-radius: var(--radius-md);
@@ -164,7 +185,23 @@ code, pre {
   transition: transform 120ms ease, background 120ms ease, color 120ms ease;
 }
 
+.btn-small {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+button.btn {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+
 .btn:hover { transform: translateY(-1px); }
+
+.btn:focus-visible {
+  outline: 3px solid rgba(85, 157, 182, 0.55);
+  outline-offset: 2px;
+}
 
 .btn-primary {
   background: var(--ack-red);

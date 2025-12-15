@@ -59,6 +59,13 @@ type Expectation struct {
 
 	FinalExitCode      int
 	FinalStdoutContain string
+
+	// Optional expectations for baseline vs memory runs.
+	// Useful for eval regression tests (to ensure we actually reduced help usage).
+	BaselineHelpInvocations *int
+	MemoryHelpInvocations   *int
+	BaselineSuggestionUsed  *bool
+	MemorySuggestionUsed    *bool
 }
 
 type Report struct {
@@ -234,7 +241,7 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		finalExit = exitCode(err)
 	}
 
-	helpInv, err := env.CountHelpInvocations(s.Tool, s.Help.Args)
+	helpInv, err := env.CountHelpInvocations(s.Tool, nil)
 	if err != nil {
 		return RunResult{Mode: mode, Error: err.Error()}
 	}
@@ -258,6 +265,32 @@ func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
 		errMsg = fmt.Sprintf("final output missing %q", s.Expect.FinalStdoutContain)
 	case suggestionPrinted && suggested == "":
 		errMsg = "ackchyually printed suggestion header but no command line"
+	}
+
+	if success {
+		wantHelpInv := (*int)(nil)
+		wantSuggested := (*bool)(nil)
+		switch mode {
+		case ModeBaseline:
+			wantHelpInv = s.Expect.BaselineHelpInvocations
+			wantSuggested = s.Expect.BaselineSuggestionUsed
+		case ModeMemory:
+			wantHelpInv = s.Expect.MemoryHelpInvocations
+			wantSuggested = s.Expect.MemorySuggestionUsed
+		}
+
+		switch {
+		case wantHelpInv != nil && helpInv != *wantHelpInv:
+			success = false
+			errMsg = fmt.Sprintf("help invocations=%d (want %d)", helpInv, *wantHelpInv)
+		case wantSuggested != nil && suggestionUsed != *wantSuggested:
+			success = false
+			if *wantSuggested {
+				errMsg = "expected suggestion to be used"
+			} else {
+				errMsg = "expected no suggestion to be used"
+			}
+		}
 	}
 
 	return RunResult{
@@ -414,9 +447,12 @@ func matchesHelpInvocation(tool string, helpArgs []string, argv []string) bool {
 }
 
 func isHelpInvocation(argv []string) bool {
+	if len(argv) > 1 && argv[1] == "help" {
+		return true
+	}
 	for _, a := range argv[1:] {
 		switch a {
-		case "-h", "--help", "-help", "help":
+		case "-h", "--help", "-help":
 			return true
 		}
 	}
@@ -426,7 +462,8 @@ func isHelpInvocation(argv []string) bool {
 func ExtractSuggestion(output string) (string, bool) {
 	lines := strings.Split(output, "\n")
 	for i := 0; i < len(lines); i++ {
-		if strings.Contains(lines[i], "ackchyually: this worked before here:") {
+		if strings.Contains(lines[i], "ackchyually: suggestion") ||
+			strings.Contains(lines[i], "ackchyually: this worked before here:") {
 			for j := i + 1; j < len(lines); j++ {
 				l := strings.TrimSpace(lines[j])
 				if l == "" {

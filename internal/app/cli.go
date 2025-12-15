@@ -4,9 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 )
 
 func RunCLI(args []string) int {
+	start := time.Now()
+	code := runCLI(args)
+	logCLIInvocation(start, time.Since(start), args, code)
+	return code
+}
+
+func runCLI(args []string) int {
 	if len(args) == 0 {
 		usage()
 		return 2
@@ -21,10 +29,10 @@ func RunCLI(args []string) int {
 	case "export":
 		return exportCmd(args[1:])
 	case "version":
-		fmt.Println("ackchyually dev")
+		printVersion()
 		return 0
 	default:
-		usage()
+		printUnknownCommand(args[0], []string{"shim", "best", "tag", "export", "version"})
 		return 2
 	}
 }
@@ -34,6 +42,8 @@ func usage() {
 
 Commands:
   shim install <tool...>
+  shim list
+  shim enable
   shim uninstall <tool...>
   shim doctor
   best --tool <tool> "<query>"
@@ -53,12 +63,16 @@ func shimCmd(args []string) int {
 	switch args[0] {
 	case "install":
 		return shimInstall(args[1:])
+	case "list":
+		return shimList(args[1:])
+	case "enable":
+		return shimEnable(args[1:])
 	case "uninstall":
 		return shimUninstall(args[1:])
 	case "doctor":
 		return shimDoctor()
 	default:
-		usage()
+		printUnknownSubcommand("shim", args[0], []string{"install", "list", "enable", "uninstall", "doctor"})
 		return 2
 	}
 }
@@ -101,7 +115,7 @@ func tagCmd(args []string) int {
 	case "run":
 		return tagRun(args[1:])
 	default:
-		usage()
+		printUnknownSubcommand("tag", args[0], []string{"add", "run"})
 		return 2
 	}
 }

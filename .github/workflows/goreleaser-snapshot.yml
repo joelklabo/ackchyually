@@ -1,15 +1,15 @@
-name: Release
+name: GoReleaser (snapshot)
 
 on:
-  push:
-    tags:
-      - "v*"
+  pull_request:
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: read
 
 jobs:
-  goreleaser:
+  snapshot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,6 +25,12 @@ jobs:
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean
+          args: release --snapshot --clean --skip=publish,announce
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: goreleaser-snapshot-${{ github.run_id }}
+          path: dist
+          if-no-files-found: error
