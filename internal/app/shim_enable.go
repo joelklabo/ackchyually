@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joelklabo/ackchyually/internal/ui"
 )
 
 func shimEnable(args []string) int {
@@ -19,6 +21,8 @@ func shimEnable(args []string) int {
 		fmt.Fprintln(os.Stderr, "usage: ackchyually shim enable [--shell zsh|bash|fish] [--file <path>]")
 		return 2
 	}
+
+	u := ui.New(os.Stdout)
 
 	shimDir := shimDir()
 
@@ -63,7 +67,7 @@ func shimEnable(args []string) int {
 	}
 
 	if strings.Contains(content, "ackchyually/shims") || strings.Contains(content, "# ackchyually shims") {
-		fmt.Printf("Already enabled in: %s\n", path)
+		fmt.Printf("%s: already enabled in: %s\n", u.OK("OK"), path)
 		return 0
 	}
 
@@ -81,9 +85,9 @@ func shimEnable(args []string) int {
 		return 1
 	}
 
-	fmt.Printf("Enabled shims in: %s\n", path)
+	fmt.Printf("%s: enabled shims in: %s\n", u.OK("OK"), path)
 	fmt.Println()
-	fmt.Println("Next:")
+	fmt.Println(u.Bold("Next:"))
 	fmt.Printf("  source %s\n", path)
 	fmt.Println("  hash -r 2>/dev/null || true")
 	fmt.Println("  which <tool>")

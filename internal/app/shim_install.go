@@ -8,9 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/term"
-
 	"github.com/joelklabo/ackchyually/internal/execx"
+	"github.com/joelklabo/ackchyually/internal/ui"
 )
 
 func shimInstall(tools []string) int {
@@ -41,9 +40,9 @@ func shimInstall(tools []string) int {
 		}
 	}
 
-	bold, dim, green, yellow, reset := ansiStyles()
+	u := ui.New(os.Stdout)
 
-	fmt.Printf("%s%sInstalled%s shims in:\n  %s\n", green, bold, reset, shimDir)
+	fmt.Printf("%s shims in:\n  %s\n", u.OK("Installed"), shimDir)
 	fmt.Println()
 
 	pathEnv := os.Getenv("PATH")
@@ -62,41 +61,31 @@ func shimInstall(tools []string) int {
 
 	switch {
 	case found == 0:
-		fmt.Printf("%sOK%s: shim dir is first in PATH\n", green, reset)
-		fmt.Printf("%sTip%s: persist this with: ackchyually shim enable\n", dim, reset)
+		fmt.Printf("%s: shim dir is first in PATH\n", u.OK("OK"))
+		fmt.Printf("%s: persist this with: ackchyually shim enable\n", u.Dim("Tip"))
 	case found == -1:
-		fmt.Printf("%s%sRequired%s: put shim dir first in PATH\n", yellow, bold, reset)
+		fmt.Printf("%s: put shim dir first in PATH\n", u.Warn("Required"))
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
 		fmt.Println("  # or run: ackchyually shim enable")
 	case found > 0:
-		fmt.Printf("%s%sRequired%s: shim dir must be first in PATH (currently index=%d)\n", yellow, bold, reset, found)
+		fmt.Printf("%s: shim dir must be first in PATH (currently index=%d)\n", u.Warn("Required"), found)
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
 		fmt.Println("  # or run: ackchyually shim enable")
 	}
 
 	fmt.Println()
-	fmt.Printf("%sRefresh%s:\n", bold, reset)
+	fmt.Printf("%s:\n", u.Bold("Refresh"))
 	fmt.Println("  hash -r 2>/dev/null || true")
 	fmt.Println()
-	fmt.Printf("%sVerify%s:\n", bold, reset)
+	fmt.Printf("%s:\n", u.Bold("Verify"))
 	fmt.Printf("  which %s\n", tools[0])
 	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0])
 	fmt.Println()
-	fmt.Printf("%sIf it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.%s\n", dim, tools[0], reset)
+	fmt.Println(u.Dim(fmt.Sprintf("If it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.", tools[0])))
 
 	return 0
-}
-
-func ansiStyles() (bold, dim, green, yellow, reset string) {
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return "", "", "", "", ""
-	}
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
-		return "", "", "", "", ""
-	}
-	return "\033[1m", "\033[2m", "\033[32m", "\033[33m", "\033[0m"
 }
 
 func shimUninstall(tools []string) int {
@@ -113,13 +102,15 @@ func shimUninstall(tools []string) int {
 
 func shimDoctor() int {
 	shimDir := shimDir()
+	u := ui.New(os.Stdout)
+
 	ackExe := "(unknown)"
 	if p, err := os.Executable(); err == nil {
 		ackExe = p
 	}
 	dbPath := filepath.Join(filepath.Dir(shimDir), "ackchyually.sqlite")
 
-	fmt.Println("ackchyually shim doctor")
+	fmt.Println(u.Bold("ackchyually shim doctor"))
 	fmt.Printf("binary:   %s\n", ackExe)
 	fmt.Printf("shim dir: %s\n", shimDir)
 	fmt.Printf("db:       %s\n", dbPath)
@@ -227,12 +218,12 @@ func shimDoctor() int {
 		}
 
 		if ok {
-			fmt.Println("status:   ok (shims are active)")
+			fmt.Printf("status:   %s (shims are active)\n", u.OK("ok"))
 			return 0
 		}
 
 		fmt.Println()
-		fmt.Println("status:   warn")
+		fmt.Printf("status:   %s\n", u.Warn("warn"))
 		if len(inactive) > 0 {
 			fmt.Printf("inactive: %s\n", strings.Join(inactive, ", "))
 		}
@@ -245,14 +236,14 @@ func shimDoctor() int {
 
 		if len(details) > 0 {
 			fmt.Println()
-			fmt.Println("details:")
+			fmt.Println(u.Bold("details:"))
 			for _, d := range details {
 				fmt.Printf("  - %s\n", d)
 			}
 		}
 
 		fmt.Println()
-		fmt.Println("fix:")
+		fmt.Println(u.Bold("fix:"))
 		if len(inactive) > 0 {
 			fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
 			fmt.Println("  hash -r 2>/dev/null || true")
