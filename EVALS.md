@@ -15,7 +15,7 @@ For each run we record:
 - Whether the scenario ended in success
 - How many invocations matched `--help` / `-h` / `help` (from the ackchyually SQLite log)
 
-### Run
+### Run (helpcount)
 
 ```sh
 just eval-helpcount
@@ -51,7 +51,7 @@ On macOS, this eval uses Homebrew analytics to pick up to `-count` distinct exec
 for a working `--version`/`--help`-style invocation and verifies the shimmed behavior matches the direct behavior (exit code, no unexpected
 `ackchyually: suggestion` output, etc).
 
-### Run
+### Run (toptools)
 
 Dry-run (prints selected executables):
 
