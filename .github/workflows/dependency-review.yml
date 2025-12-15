@@ -25,8 +25,9 @@ jobs:
               }
             `;
             try {
-              await github.graphql(q, { owner: context.repo.owner, repo: context.repo.repo });
-              core.setOutput("supported", "true");
+              const res = await github.graphql(q, { owner: context.repo.owner, repo: context.repo.repo });
+              const total = res?.repository?.dependencyGraphManifests?.totalCount ?? 0;
+              core.setOutput("supported", total > 0 ? "true" : "false");
             } catch (err) {
               core.warning(`dependency graph appears disabled or unavailable: ${err.message}`);
               core.setOutput("supported", "false");
