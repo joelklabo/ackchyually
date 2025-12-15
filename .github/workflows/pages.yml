@@ -31,8 +31,8 @@ jobs:
       - name: Generate coverage badge (site/coverage.json)
         run: |
           # "Product coverage": exclude eval commands and internal testtools helpers.
-          pkgs="$(go list ./... | awk '!/\/cmd\/ackchyually-eval/ && !/\/internal\/testtools/ && !/\/internal\/eval/ {print}')"
-          go test $pkgs -coverprofile=coverage.out -covermode=atomic
+          mapfile -t pkgs < <(go list ./... | awk '!/\/cmd\/ackchyually-eval/ && !/\/internal\/testtools/ && !/\/internal\/eval/ {print}')
+          go test "${pkgs[@]}" -coverprofile=coverage.out -covermode=atomic
           pct="$(go tool cover -func=coverage.out | awk '/^total:/{print $3}')"
           pct_num="${pct%\%}"
           color="$(awk -v c="$pct_num" 'BEGIN{c+=0; if(c>=90)print "brightgreen"; else if(c>=80)print "green"; else if(c>=70)print "yellowgreen"; else if(c>=60)print "yellow"; else print "red";}')"
