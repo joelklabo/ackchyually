@@ -3,13 +3,13 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"golang.org/x/term"
-
 	"github.com/joelklabo/ackchyually/internal/execx"
+	"github.com/joelklabo/ackchyually/internal/ui"
 )
 
 func shimInstall(tools []string) int {
@@ -29,6 +29,9 @@ func shimInstall(tools []string) int {
 	}
 
 	for _, t := range tools {
+		if t == "ackchyually" || t == "ackchyually.exe" {
+			continue
+		}
 		dst := filepath.Join(shimDir, t)
 		_ = os.Remove(dst)
 		if err := os.Symlink(exe, dst); err != nil {
@@ -37,9 +40,9 @@ func shimInstall(tools []string) int {
 		}
 	}
 
-	bold, dim, green, yellow, reset := ansiStyles()
+	u := ui.New(os.Stdout)
 
-	fmt.Printf("%s%sInstalled%s shims in:\n  %s\n", green, bold, reset, shimDir)
+	fmt.Printf("%s shims in:\n  %s\n", u.OK("Installed"), shimDir)
 	fmt.Println()
 
 	pathEnv := os.Getenv("PATH")
@@ -58,36 +61,31 @@ func shimInstall(tools []string) int {
 
 	switch {
 	case found == 0:
-		fmt.Printf("%sOK%s: shim dir is first in PATH\n", green, reset)
+		fmt.Printf("%s: shim dir is first in PATH\n", u.OK("OK"))
+		fmt.Printf("%s: persist this with: ackchyually shim enable\n", u.Dim("Tip"))
 	case found == -1:
-		fmt.Printf("%s%sRequired%s: add shim dir to PATH\n", yellow, bold, reset)
+		fmt.Printf("%s: put shim dir first in PATH\n", u.Warn("Required"))
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
+		fmt.Println("  # or run: ackchyually shim enable")
 	case found > 0:
-		fmt.Printf("%s%sRecommended%s: put shim dir first in PATH (currently index=%d)\n", yellow, bold, reset, found)
+		fmt.Printf("%s: shim dir must be first in PATH (currently index=%d)\n", u.Warn("Required"), found)
 		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
+		fmt.Println("  # or run: ackchyually shim enable")
 	}
-	fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
-	fmt.Println("  # or run: ackchyually shim enable")
-	fmt.Println("  hash -r 2>/dev/null || true")
 
 	fmt.Println()
-	fmt.Printf("%sVerify%s:\n", bold, reset)
+	fmt.Printf("%s:\n", u.Bold("Refresh"))
+	fmt.Println("  hash -r 2>/dev/null || true")
+	fmt.Println()
+	fmt.Printf("%s:\n", u.Bold("Verify"))
 	fmt.Printf("  which %s\n", tools[0])
 	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0])
 	fmt.Println()
-	fmt.Printf("%sIf it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.%s\n", dim, tools[0], reset)
+	fmt.Println(u.Dim(fmt.Sprintf("If it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.", tools[0])))
 
 	return 0
-}
-
-func ansiStyles() (bold, dim, green, yellow, reset string) {
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return "", "", "", "", ""
-	}
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
-		return "", "", "", "", ""
-	}
-	return "\033[1m", "\033[2m", "\033[32m", "\033[33m", "\033[0m"
 }
 
 func shimUninstall(tools []string) int {
@@ -104,101 +102,86 @@ func shimUninstall(tools []string) int {
 
 func shimDoctor() int {
 	shimDir := shimDir()
+	u := ui.New(os.Stdout)
+
 	ackExe := "(unknown)"
 	if p, err := os.Executable(); err == nil {
 		ackExe = p
 	}
 	dbPath := filepath.Join(filepath.Dir(shimDir), "ackchyually.sqlite")
 
-	fmt.Println("ackchyually shim doctor")
+	fmt.Println(u.Bold("ackchyually shim doctor"))
+	fmt.Printf("binary:   %s\n", ackExe)
+	fmt.Printf("shim dir: %s\n", shimDir)
+	fmt.Printf("db:       %s\n", dbPath)
 	fmt.Println()
-	fmt.Println("ackchyually:", ackExe)
-	fmt.Println("shim dir:", shimDir)
-	fmt.Println("db:", dbPath)
-	fmt.Println()
 
-	ok := true
-
-	if st, err := os.Stat(shimDir); err != nil {
-		ok = false
-		fmt.Println("WARN: shim dir missing (run: ackchyually shim install <tool...>)")
-	} else if !st.IsDir() {
-		ok = false
-		fmt.Println("WARN: shim dir exists but is not a directory")
-	}
-
-	pathEnv := os.Getenv("PATH")
-	if pathEnv == "" {
-		ok = false
-		fmt.Println("WARN: PATH is empty")
-	} else {
-		parts := strings.Split(pathEnv, string(os.PathListSeparator))
-		want := filepath.Clean(shimDir)
-		found := -1
-		for i, p := range parts {
-			if p == "" {
-				p = "."
-			}
-			if filepath.Clean(p) == want {
-				found = i
-				break
-			}
-		}
-		switch {
-		case found == -1:
-			ok = false
-			fmt.Println("WARN: shim dir is not present in PATH")
-			fmt.Printf("Fix: export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
-		case found != 0:
-			ok = false
-			fmt.Printf("WARN: shim dir is in PATH but not first (index=%d)\n", found)
-			fmt.Printf("Fix: export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
-		default:
-			fmt.Println("OK: shim dir is first in PATH")
-		}
-	}
-
-	if _, err := os.Stat(dbPath); err != nil {
-		fmt.Println("INFO: db not found yet (created on first invocation)")
-	} else {
-		fmt.Println("OK: db file exists")
-	}
-
+	hasAckchyuallyShim := false
 	entries, err := os.ReadDir(shimDir)
 	switch {
 	case err != nil:
-		ok = false
-		fmt.Println("WARN: cannot read shim dir:", err)
-	case len(entries) == 0:
-		fmt.Println("INFO: no shims installed")
+		if os.IsNotExist(err) {
+			fmt.Println("installed shims: (none)")
+			return 0
+		}
+		fmt.Fprintln(os.Stderr, "ackchyually:", err)
+		return 1
 	default:
 		names := make([]string, 0, len(entries))
 		for _, e := range entries {
-			names = append(names, e.Name())
+			name := e.Name()
+			if name == "" || name[0] == '.' {
+				continue
+			}
+			if name == "ackchyually" || name == "ackchyually.exe" {
+				hasAckchyuallyShim = true
+				continue
+			}
+			names = append(names, name)
 		}
 		sort.Strings(names)
 
-		fmt.Println()
-		fmt.Printf("Installed shims (%d):\n", len(names))
+		if len(names) == 0 {
+			fmt.Println("installed shims: (none)")
+			return 0
+		}
+
+		ok := true
+		var details []string
+		var inactive []string
+		var broken []string
+		var missingReal []string
+
+		if hasAckchyuallyShim {
+			fmt.Println("note:    shim dir contains 'ackchyually' (not needed)")
+			fmt.Println("         remove: ackchyually shim uninstall ackchyually")
+			fmt.Println()
+		}
+
+		fmt.Printf("installed shims: %s\n", strings.Join(names, ", "))
+
 		for _, name := range names {
 			dst := filepath.Join(shimDir, name)
 
 			info, err := os.Lstat(dst)
 			if err != nil {
 				ok = false
-				fmt.Printf("- %s: WARN: stat failed: %v\n", name, err)
+				broken = append(broken, name)
+				details = append(details, fmt.Sprintf("%s: stat failed", name))
 				continue
 			}
 			if info.Mode()&os.ModeSymlink == 0 {
 				ok = false
-				fmt.Printf("- %s: WARN: not a symlink (expected symlink to ackchyually)\n", name)
+				broken = append(broken, name)
+				details = append(details, fmt.Sprintf("%s: not a symlink (expected symlink to ackchyually)", name))
 				continue
 			}
 
 			target, err := os.Readlink(dst)
 			if err != nil {
 				ok = false
-				fmt.Printf("- %s: WARN: readlink failed: %v\n", name, err)
+				broken = append(broken, name)
+				details = append(details, fmt.Sprintf("%s: readlink failed", name))
 				continue
 			}
 			if !filepath.IsAbs(target) {
@@ -208,24 +191,72 @@ func shimDoctor() int {
 
 			if st, err := os.Stat(target); err != nil || st.IsDir() || st.Mode()&0o111 == 0 {
 				ok = false
-				fmt.Printf("- %s: WARN: broken shim target: %s\n", name, target)
+				broken = append(broken, name)
+				details = append(details, fmt.Sprintf("%s: broken shim target", name))
 				continue
 			}
 
-			realPath, err := execx.WhichSkippingShims(name)
-			if err != nil {
+			if _, err := execx.WhichSkippingShims(name); err != nil {
 				ok = false
-				fmt.Printf("- %s: WARN: real tool not found in PATH (excluding shims)\n", name)
+				missingReal = append(missingReal, name)
+				details = append(details, fmt.Sprintf("%s: real tool not found in PATH (excluding shims)", name))
 				continue
 			}
-			fmt.Printf("- %s: OK (real: %s)\n", name, realPath)
-		}
-	}
 
-	if !ok {
+			got, err := exec.LookPath(name)
+			active := err == nil && filepath.Clean(got) == filepath.Clean(dst)
+			if !active {
+				ok = false
+				inactive = append(inactive, name)
+				if err != nil {
+					details = append(details, fmt.Sprintf("%s: not in PATH (expected %s)", name, dst))
+				} else {
+					details = append(details, fmt.Sprintf("%s: PATH=%s (expected %s)", name, got, dst))
+				}
+				continue
+			}
+		}
+
+		if ok {
+			fmt.Printf("status:   %s (shims are active)\n", u.OK("ok"))
+			return 0
+		}
+
+		fmt.Println()
+		fmt.Printf("status:   %s\n", u.Warn("warn"))
+		if len(inactive) > 0 {
+			fmt.Printf("inactive: %s\n", strings.Join(inactive, ", "))
+		}
+		if len(broken) > 0 {
+			fmt.Printf("broken:   %s\n", strings.Join(broken, ", "))
+		}
+		if len(missingReal) > 0 {
+			fmt.Printf("missing:  %s\n", strings.Join(missingReal, ", "))
+		}
+
+		if len(details) > 0 {
+			fmt.Println()
+			fmt.Println(u.Bold("details:"))
+			for _, d := range details {
+				fmt.Printf("  - %s\n", d)
+			}
+		}
+
+		fmt.Println()
+		fmt.Println(u.Bold("fix:"))
+		if len(inactive) > 0 {
+			fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+			fmt.Println("  hash -r 2>/dev/null || true")
+			fmt.Println("  # or: ackchyually shim enable")
+		}
+		if len(broken) > 0 {
+			fmt.Printf("  ackchyually shim install %s\n", strings.Join(broken, " "))
+		}
+		if len(missingReal) > 0 {
+			fmt.Printf("  # install missing tools, or: ackchyually shim uninstall %s\n", strings.Join(missingReal, " "))
+		}
 		return 1
 	}
-	return 0
 }
 
 func shimDir() string {

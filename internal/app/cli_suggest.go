@@ -19,9 +19,17 @@ func printUnknownCommand(got string, candidates []string) {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "ackchyually: unknown command: %s\n", got)
-	printSuggestion([]string{"ackchyually"}, got, candidates)
-	printLastSuccessfulAckchyually()
-	printAvailable("commands", candidates)
+	suggested := suggestCommand([]string{"ackchyually"}, got, candidates)
+	last := lastSuccessfulAckchyually()
+	if suggested != "" {
+		fmt.Fprintf(os.Stderr, "  try: %s\n", suggested)
+		if last != "" && last != suggested {
+			fmt.Fprintf(os.Stderr, "  last success here: %s\n", last)
+		}
+	} else if last != "" {
+		fmt.Fprintf(os.Stderr, "  last success here: %s\n", last)
+	}
+	printAvailable("  ", candidates)
 }
 
 func printUnknownSubcommand(parent, got string, candidates []string) {
@@ -31,27 +39,34 @@ func printUnknownSubcommand(parent, got string, candidates []string) {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "ackchyually: unknown %s subcommand: %s\n", parent, got)
-	printSuggestion([]string{"ackchyually", parent}, got, candidates)
-	printLastSuccessfulAckchyually()
-	printAvailable(parent+" subcommands", candidates)
+	suggested := suggestCommand([]string{"ackchyually", parent}, got, candidates)
+	last := lastSuccessfulAckchyually()
+	if suggested != "" {
+		fmt.Fprintf(os.Stderr, "  try: %s\n", suggested)
+		if last != "" && last != suggested {
+			fmt.Fprintf(os.Stderr, "  last success here: %s\n", last)
+		}
+	} else if last != "" {
+		fmt.Fprintf(os.Stderr, "  last success here: %s\n", last)
+	}
+	printAvailable("  ", candidates)
 }
 
-func printSuggestion(prefix []string, got string, candidates []string) {
+func suggestCommand(prefix []string, got string, candidates []string) string {
 	s, ok := bestCommandMatch(got, candidates)
 	if !ok {
-		return
+		return ""
 	}
-	fmt.Fprintln(os.Stderr, "ackchyually: suggestion:")
-	fmt.Fprintf(os.Stderr, "  %s\n", strings.Join(append(prefix, s), " "))
+	return strings.Join(append(prefix, s), " ")
 }
 
-func printAvailable(label string, candidates []string) {
+func printAvailable(indent string, candidates []string) {
 	if len(candidates) == 0 {
 		return
 	}
 	sorted := append([]string{}, candidates...)
 	sort.Strings(sorted)
-	fmt.Fprintf(os.Stderr, "ackchyually: available %s: %s\n", label, strings.Join(sorted, ", "))
+	fmt.Fprintf(os.Stderr, "%savailable: %s\n", indent, strings.Join(sorted, ", "))
 }
 
 func bestCommandMatch(got string, candidates []string) (string, bool) {
@@ -89,10 +104,11 @@ func bestCommandMatch(got string, candidates []string) (string, bool) {
 	return best, bestScore > 0
 }
 
-func printLastSuccessfulAckchyually() {
+func lastSuccessfulAckchyually() string {
 	ctxKey := contextkey.Detect()
 	r := redact.Default()
 
+	var out string
 	if err := store.WithDB(func(db *store.DB) error {
 		cmds, err := db.ListSuccessful("ackchyually", ctxKey, 1)
 		if err != nil {
@@ -105,10 +121,10 @@ func printLastSuccessfulAckchyually() {
 		if len(argv) == 0 {
 			return nil
 		}
-		fmt.Fprintln(os.Stderr, "ackchyually: last success here:")
-		fmt.Fprintln(os.Stderr, "  "+execx.ShellJoin(argv))
+		out = execx.ShellJoin(argv)
 		return nil
 	}); err != nil {
 		_ = err // best-effort
 	}
+	return out
 }
