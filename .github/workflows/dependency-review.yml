@@ -5,11 +5,38 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/dependency-review-action@v4
+      - id: check
+        name: Check dependency graph support
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const q = `
+              query($owner:String!, $repo:String!) {
+                repository(owner:$owner, name:$repo) {
+                  dependencyGraphManifests(first: 1) { totalCount }
+                }
+              }
+            `;
+            try {
+              await github.graphql(q, { owner: context.repo.owner, repo: context.repo.repo });
+              core.setOutput("supported", "true");
+            } catch (err) {
+              core.warning(`dependency graph appears disabled or unavailable: ${err.message}`);
+              core.setOutput("supported", "false");
+            }
 
+      - name: Dependency review
+        if: steps.check.outputs.supported == 'true'
+        uses: actions/dependency-review-action@v4
+
+      - name: Dependency graph disabled (skipping)
+        if: steps.check.outputs.supported != 'true'
+        run: |
+          echo "::notice::Dependency Review requires GitHub's dependency graph. Enable it in repo settings (Settings → Security & analysis → Dependency graph)."
