@@ -9,6 +9,7 @@ import (
 
 func BuiltinScenarios() []Scenario {
 	return []Scenario{
+		fakeExitZeroUsageScenario(),
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
 		gitLogSubjectConfusingNoiseScenario(),
@@ -52,6 +53,84 @@ func BuiltinScenarios() []Scenario {
 		ghConfigSetInvalidValueScenario(),
 		ghConfigGetUnknownKeyScenario(),
 		ghVersionTypoScenario(),
+	}
+}
+
+func fakeExitZeroUsageScenario() Scenario {
+	return Scenario{
+		Name:        "fake_exit0_usage",
+		Description: "A tool prints usage but exits 0 (seeded vs unseeded).",
+		Tool:        "exit0tool",
+		Setup: func(env *Env) error {
+			bin := filepath.Join(env.WorkDir, "bin")
+			if err := os.MkdirAll(bin, 0o755); err != nil {
+				return err
+			}
+
+			toolPath := filepath.Join(bin, "exit0tool")
+			script := `#!/bin/sh
+set -eu
+
+for a in "$@"; do
+  case "$a" in
+    -h|--help|-help|help)
+      echo "usage: exit0tool log -1 --pretty=%s"
+      exit 0
+      ;;
+  esac
+done
+
+case "${1:-}" in
+  log)
+    if [ "${2:-}" != "-1" ]; then
+      echo "usage: exit0tool log -1 --pretty=%s" >&2
+      exit 0
+    fi
+
+    case "${3:-}" in
+      --pretty=%s)
+        echo "OK"
+        exit 0
+        ;;
+      --prety=%s)
+        echo "error: unknown option prety=%s" >&2
+        echo "usage: exit0tool log -1 --pretty=%s" >&2
+        exit 0
+        ;;
+      *)
+        echo "usage: exit0tool log -1 --pretty=%s" >&2
+        exit 0
+        ;;
+    esac
+    ;;
+  --version|version|-v|-V)
+    echo "exit0tool 1.0.0"
+    exit 0
+    ;;
+  *)
+    echo "usage: exit0tool log -1 --pretty=%s" >&2
+    exit 0
+    ;;
+esac
+`
+			if err := os.WriteFile(toolPath, []byte(script), 0o755); err != nil {
+				return err
+			}
+
+			env.basePath = strings.Join([]string{bin, env.basePath}, string(os.PathListSeparator))
+			env.directEnv = upsertEnv(env.directEnv, "PATH", env.basePath)
+			env.shimmedEnv = upsertEnv(env.shimmedEnv, "PATH", strings.Join([]string{env.ShimDir, env.basePath}, string(os.PathListSeparator)))
+			return nil
+		},
+		Seed: Command{Args: []string{"log", "-1", "--pretty=%s"}},
+		Bad:  Command{Args: []string{"log", "-1", "--prety=%s"}}, //nolint:misspell // intentional typo scenario
+		Help: Command{Args: []string{"log", "-h"}},
+		Expect: Expectation{
+			BadExitCode:        intPtr(0),
+			BadOutputContain:   "usage:",
+			FinalExitCode:      0,
+			FinalStdoutContain: "OK",
+		},
 	}
 }
 

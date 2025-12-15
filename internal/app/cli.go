@@ -29,7 +29,7 @@ func runCLI(args []string) int {
 	case "export":
 		return exportCmd(args[1:])
 	case "version":
-		fmt.Println("ackchyually dev")
+		printVersion()
 		return 0
 	default:
 		printUnknownCommand(args[0], []string{"shim", "best", "tag", "export", "version"})
