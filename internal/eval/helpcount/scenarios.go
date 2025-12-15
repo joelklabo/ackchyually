@@ -10,6 +10,12 @@ import (
 func BuiltinScenarios() []Scenario {
 	return []Scenario{
 		fakeExitZeroUsageScenario(),
+		structOutJSONScenario(),
+		structOutYAMLScenario(),
+		structOutLogsScenario(),
+		ansiExit0Scenario(),
+		clapUnexpectedArgScenario(),
+		attachedShortFlagScenario(),
 		gitLogSubjectScenario(),
 		gitLogSubjectNoiseScenario(),
 		gitLogSubjectConfusingNoiseScenario(),

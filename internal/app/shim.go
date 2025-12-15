@@ -111,26 +111,20 @@ func looksUsageishOnSuccess(res execx.Result) bool {
 	switch res.Mode {
 	case "pipes":
 		t = res.StderrTail
-		if strings.TrimSpace(t) == "" {
-			t = res.StdoutTail
-		}
 	case "pty":
 		t = res.CombinedTail
 	default:
 		t = res.StderrTail
 		if strings.TrimSpace(t) == "" {
-			t = res.StdoutTail
-		}
-		if strings.TrimSpace(t) == "" {
 			t = res.CombinedTail
 		}
 	}
-	return looksUsageishLineStart(t)
+	return looksUsageishLineStartOnSuccess(t)
 }
 
-func looksUsageishLineStart(t string) bool {
+func looksUsageishLineStartOnSuccess(t string) bool {
 	for _, line := range strings.Split(t, "\n") {
-		l := strings.TrimSpace(line)
+		l := strings.TrimSpace(stripANSI(line))
 		if l == "" {
 			continue
 		}
@@ -143,21 +137,20 @@ func looksUsageishLineStart(t string) bool {
 			continue
 		}
 
-		if looksUsageishPrefix(l) {
+		if looksUsageishPrefixOnSuccess(l) {
 			return true
 		}
-		if rest, ok := stripToolPrefix(l); ok && looksUsageishPrefix(rest) {
+		if rest, ok := stripToolPrefix(l); ok && looksUsageishPrefixOnSuccess(rest) {
 			return true
 		}
 	}
 	return false
 }
 
-func looksUsageishPrefix(line string) bool {
+func looksUsageishPrefixOnSuccess(line string) bool {
 	l := strings.ToLower(strings.TrimSpace(line))
 	switch {
-	case strings.HasPrefix(l, "usage:"),
-		strings.HasPrefix(l, "usage of"),
+	case (strings.HasPrefix(l, "usage:") || strings.HasPrefix(l, "usage of")) && lineLooksLikeUsageBanner(l),
 		strings.HasPrefix(l, "flag provided but not defined"),
 		strings.HasPrefix(l, "unknown flag"),
 		strings.HasPrefix(l, "unknown shorthand flag"),
@@ -182,8 +175,8 @@ func looksUsageishPrefix(line string) bool {
 		strings.HasPrefix(l, "only one reference expected"),
 		strings.HasPrefix(l, "needed a single revision"),
 		strings.HasPrefix(l, "missing colon separator"),
-		strings.HasPrefix(l, "error:"),
-		strings.HasPrefix(l, "fatal:"),
+		(strings.HasPrefix(l, "error:") && lineLooksLikeCLIError(l)),
+		(strings.HasPrefix(l, "fatal:") && lineLooksLikeCLIError(l)),
 		(strings.HasPrefix(l, "try '") && strings.Contains(l, "--help")):
 		return true
 	}
@@ -215,6 +208,64 @@ func stripToolPrefix(line string) (string, bool) {
 	return rest, true
 }
 
+func lineLooksLikeUsageBanner(line string) bool {
+	// Avoid treating structured/text output that happens to start with "usage:" as a CLI
+	// invocation error. For a successful exit, require hints of actual usage syntax.
+	return strings.Contains(line, " --") ||
+		strings.ContainsAny(line, "[]<>") ||
+		strings.Contains(line, " -")
+}
+
+func lineLooksLikeCLIError(line string) bool {
+	// Avoid treating ordinary output ("ERROR: ...") as a CLI invocation error.
+	for _, s := range []string{
+		"unknown",
+		"invalid",
+		"requires",
+		"expected",
+		"flag",
+		"option",
+		"argument",
+		"command",
+		"subcommand",
+		"for usage",
+		"--help",
+		"-h",
+	} {
+		if strings.Contains(line, s) {
+			return true
+		}
+	}
+	return false
+}
+
+func stripANSI(s string) string {
+	if s == "" {
+		return s
+	}
+	out := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != 0x1b {
+			out = append(out, s[i])
+			continue
+		}
+		// CSI escape sequences (e.g. "\x1b[31m", "\x1b[1;4m").
+		if i+1 < len(s) && s[i+1] == '[' {
+			i += 2
+			for i < len(s) {
+				c := s[i]
+				if (c >= '0' && c <= '9') || c == ';' {
+					i++
+					continue
+				}
+				break
+			}
+			continue
+		}
+	}
+	return string(out)
+}
+
 func looksUsageish(t string) bool {
 	return execx.ContainsFold(t, "usage:") ||
 		execx.ContainsFold(t, "usage of") ||
@@ -223,6 +274,7 @@ func looksUsageish(t string) bool {
 		execx.ContainsFold(t, "unknown shorthand flag") ||
 		execx.ContainsFold(t, "unknown command") ||
 		execx.ContainsFold(t, "unknown subcommand") ||
+		execx.ContainsFold(t, "unexpected argument") ||
 		execx.ContainsFold(t, "for usage") ||
 		(execx.ContainsFold(t, "try '") && execx.ContainsFold(t, "--help")) ||
 		(execx.ContainsFold(t, "is not a") && execx.ContainsFold(t, "command") && execx.ContainsFold(t, "--help")) ||
@@ -382,12 +434,30 @@ func fuzzyTokenMatch(a, b string) bool {
 func tokenVariants(arg string) []string {
 	a := strings.ToLower(arg)
 	out := []string{a}
+	if isAttachedNumericShortFlag(a) {
+		out = append(out, a[:2], a[2:])
+	}
 	if i := strings.IndexByte(a, '='); i > 0 && i < len(a)-1 {
 		out = append(out, a[:i], a[i+1:])
 	} else if i := strings.IndexByte(a, '='); i > 0 {
 		out = append(out, a[:i])
 	}
 	return out
+}
+
+func isAttachedNumericShortFlag(a string) bool {
+	if len(a) < 3 || a[0] != '-' || a[1] == '-' {
+		return false
+	}
+	if a[1] < 'a' || a[1] > 'z' {
+		return false
+	}
+	for i := 2; i < len(a); i++ {
+		if a[i] < '0' || a[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeFuzzyToken(s string) (string, bool) {
