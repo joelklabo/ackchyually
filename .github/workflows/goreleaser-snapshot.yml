@@ -1,0 +1,33 @@
+name: GoReleaser (snapshot)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24.x"
+          check-latest: true
+          cache: true
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean --skip=publish,announce,changelog
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: goreleaser-snapshot-${{ github.run_id }}
+          path: dist
+          if-no-files-found: error
