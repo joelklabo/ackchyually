@@ -16,18 +16,26 @@ func TestRepro_NestedShims(t *testing.T) {
 	tmp := t.TempDir()
 	binDir := filepath.Join(tmp, "bin")
 	shimDir := filepath.Join(tmp, "shims")
-	os.Mkdir(binDir, 0755)
-	os.Mkdir(shimDir, 0755)
+	if err := os.Mkdir(binDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(shimDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create real toolB
 	// It prints "PATH=<path>" so we can inspect it.
 	toolB := filepath.Join(binDir, "toolB")
-	os.WriteFile(toolB, []byte("#!/bin/sh\necho PATH=$PATH\n"), 0755)
+	if err := os.WriteFile(toolB, []byte("#!/bin/sh\necho PATH=$PATH\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create real toolA
 	// It calls toolB
 	toolA := filepath.Join(binDir, "toolA")
-	os.WriteFile(toolA, []byte("#!/bin/sh\ntoolB\n"), 0755)
+	if err := os.WriteFile(toolA, []byte("#!/bin/sh\ntoolB\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Setup shims (we simulate shims by just setting up the environment and calling RunShim)
 	// In a real scenario, the shim binary would be executed. Here we call RunShim directly for toolA.
@@ -56,7 +64,9 @@ func TestRepro_NestedShims(t *testing.T) {
 	// execx.ShimDir() depends on UserHomeDir. We can change HOME env var.
 
 	home := filepath.Join(tmp, "home")
-	os.MkdirAll(filepath.Join(home, ".local", "share", "ackchyually", "shims"), 0755)
+	if err := os.MkdirAll(filepath.Join(home, ".local", "share", "ackchyually", "shims"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("HOME", home)
 
 	realShimDir := filepath.Join(home, ".local", "share", "ackchyually", "shims")
