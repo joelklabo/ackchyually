@@ -28,7 +28,7 @@ func TestRunner_Integration(t *testing.T) {
 
 	opts := Options{
 		Mode:           ModeCompare,
-		ScenarioFilter: "fake_exit0_usage",
+		ScenarioFilter: "", // Run all scenarios
 	}
 
 	if len(BuiltinScenarios()) == 0 {
@@ -39,6 +39,7 @@ func TestRunner_Integration(t *testing.T) {
 	if err != nil {
 		t.Logf("Runner.Run failed: %v", err)
 	}
+	t.Logf("Ran %d scenarios", len(report.Results))
 
 	if len(report.Results) == 0 && err == nil {
 		t.Log("No scenarios matched filter 'fake_exit0_usage'")

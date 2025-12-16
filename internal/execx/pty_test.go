@@ -48,3 +48,39 @@ func TestRun_UsesPTYWhenTTY(t *testing.T) {
 		t.Fatalf("expected CombinedTail to contain output, got %q", res.CombinedTail)
 	}
 }
+
+func TestRunPTY_StartError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no windows PTY support")
+	}
+	// Missing executable should cause pty.Start to fail
+	res, err := runPTY("missingtool_xyz", []string{})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if res.ExitCode != 1 {
+		t.Errorf("expected exit code 1, got %d", res.ExitCode)
+	}
+}
+
+func TestRun_NoTTY(t *testing.T) {
+	// Ensure standard fds are NOT terminals (default in go test usually, but let's be safe)
+	// We can't easily force them to be non-terminal if they are, but usually they are pipes.
+	// We'll just call Run and expect it to work (via pipes).
+	res, err := Run("echo", []string{"hi"})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if res.Mode == "pty" {
+		// If it runs as PTY, then we are in a TTY environment.
+		// That's fine, but we wanted to test the non-PTY path of Run.
+		// To force non-PTY, we can pipe stdin?
+		t.Skip("Running in TTY environment, skipping non-TTY test")
+	}
+	if res.Mode != "pipes" {
+		t.Errorf("expected Mode=pipes, got %q", res.Mode)
+	}
+	if !strings.Contains(res.StdoutTail, "hi") {
+		t.Errorf("output missing hi: %q", res.StdoutTail)
+	}
+}
