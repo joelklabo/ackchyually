@@ -3,10 +3,24 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 )
+
+func writeExec(t *testing.T, dir, name, contentUnix, contentWin string) {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	content := contentUnix
+	if runtime.GOOS == "windows" {
+		path += ".bat"
+		content = contentWin
+	}
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
+		t.Fatalf("write script: %v", err)
+	}
+}
 
 func TestRunShim_ExecError(t *testing.T) {
 	tmp := t.TempDir()
@@ -30,10 +44,7 @@ func TestRunShim_AutoExec_NoMatch(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho running\n"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho running\n", "@echo running\n")
 
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
@@ -53,10 +64,7 @@ func TestRunShim_Exit1_Usage(t *testing.T) {
 	ctxKey := setTempHomeAndCWD(t)
 	t.Setenv("ACKCHYUALLY_TEST_FORCE_TTY", "true")
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'Usage: script'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'Usage: script'\nexit 1", "@echo Usage: script\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Seed known good
@@ -78,10 +86,7 @@ func TestRunShim_Exit1_Usage(t *testing.T) {
 func TestRunShim_Exit1_NoUsage(t *testing.T) {
 	ctxKey := setTempHomeAndCWD(t)
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'Error: failed'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'Error: failed'\nexit 1", "@echo Error: failed\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Seed known good
@@ -105,10 +110,7 @@ func TestRunShim_AutoExec_Match(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho auto-executed\n"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho auto-executed\n", "@echo auto-executed\n")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	seedInvocation(t, ctxKey, "script", []string{"script", "arg"}, time.Now(), 0)
@@ -130,10 +132,7 @@ func TestRunShim_AutoExec_Match_Exit1(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\nexit 1", "@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	seedInvocation(t, ctxKey, "script", []string{"script", "arg"}, time.Now(), 0)
@@ -153,11 +152,9 @@ func TestRunShim_AutoExec_Disabled(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_TEST_FORCE_TTY", "true")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
+	tmp := t.TempDir()
 	// Script prints usage and exits 1
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'usage: script <arg>'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'usage: script <arg>'\nexit 1", "@echo usage: script <arg>\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Seed a known success
@@ -184,10 +181,7 @@ func TestRunShim_AutoExec_Redacted(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'usage: script <arg>'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'usage: script <arg>'\nexit 1", "@echo usage: script <arg>\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Seed a known success that contains redacted info
@@ -226,10 +220,7 @@ func TestRunShim_AutoExec_ExactMatch(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'usage: script <arg>'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'usage: script <arg>'\nexit 1", "@echo usage: script <arg>\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Seed a known success
@@ -258,10 +249,7 @@ func TestRunShim_AutoExec_DBError(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
 
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "script")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'usage: script <arg>'\nexit 1"), 0o755); err != nil { //nolint:gosec
-		t.Fatalf("write script: %v", err)
-	}
+	writeExec(t, tmp, "script", "#!/bin/sh\necho 'usage: script <arg>'\nexit 1", "@echo usage: script <arg>\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	// Ensure DB dir exists

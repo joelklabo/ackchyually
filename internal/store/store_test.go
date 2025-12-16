@@ -70,6 +70,7 @@ func TestOpen_FailsWhenHomeIsFile(t *testing.T) {
 		t.Fatalf("write homefile: %v", err)
 	}
 	t.Setenv("HOME", homeFile)
+	t.Setenv("USERPROFILE", homeFile) // For Windows
 
 	_, err := Open()
 	if err == nil {

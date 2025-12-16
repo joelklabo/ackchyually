@@ -26,7 +26,7 @@ func TestFindExecutable_Windows(t *testing.T) {
 	// Default PATHEXT usually includes .BAT, but we can set it explicitly to be safe
 	t.Setenv("PATHEXT", ".EXE;.BAT")
 
-	if got, ok := findExecutable(tmp, "script"); !ok || got != bat {
+	if got, ok := findExecutable(tmp, "script"); !ok || !strings.EqualFold(got, bat) {
 		t.Errorf("findExecutable(script) [implicit .bat] = %q, %v; want %q, true", got, ok, bat)
 	}
 
@@ -38,7 +38,7 @@ func TestFindExecutable_Windows(t *testing.T) {
 	}
 
 	// With PATHEXT=.EXE;.BAT, .EXE should win
-	if got, ok := findExecutable(tmp, "script"); !ok || got != exe {
+	if got, ok := findExecutable(tmp, "script"); !ok || !strings.EqualFold(got, exe) {
 		t.Errorf("findExecutable(script) [implicit .exe priority] = %q, %v; want %q, true", got, ok, exe)
 	}
 

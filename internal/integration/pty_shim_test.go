@@ -21,10 +21,6 @@ import (
 )
 
 func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("no windows support")
-	}
-
 	root := repoRoot(t)
 
 	tmp := t.TempDir()
@@ -126,10 +122,6 @@ func waitForSize(t *testing.T, f *os.File, rows, cols uint16) {
 }
 
 func TestPipes_NonInteractiveUsesPipes(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("no windows support")
-	}
-
 	root := repoRoot(t)
 
 	tmp := t.TempDir()
