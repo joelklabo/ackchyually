@@ -23,6 +23,26 @@ func TestShellJoin(t *testing.T) {
 	}
 }
 
+func TestContainsFold(t *testing.T) {
+	tests := []struct {
+		haystack string
+		needle   string
+		want     bool
+	}{
+		{"Hello World", "world", true},
+		{"Hello World", "WORLD", true},
+		{"Hello World", "Foo", false},
+		{"", "foo", false},
+		{"foo", "", true},
+	}
+
+	for _, tt := range tests {
+		if got := ContainsFold(tt.haystack, tt.needle); got != tt.want {
+			t.Errorf("ContainsFold(%q, %q) = %v; want %v", tt.haystack, tt.needle, got, tt.want)
+		}
+	}
+}
+
 func TestTail_TrimsToCapacity(t *testing.T) {
 	tail := NewTail(5)
 	if _, err := tail.Write([]byte("hello")); err != nil {

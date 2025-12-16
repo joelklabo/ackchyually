@@ -115,3 +115,24 @@ func TestAutoExecKnownSuccess_Ambiguous(t *testing.T) {
 		t.Errorf("autoExecKnownSuccess returned %d want -1 (ok=false)", code)
 	}
 }
+
+func TestAutoExecKnownSuccess_Redacted(t *testing.T) {
+	ctxKey := setTempHomeAndCWD(t)
+	t.Setenv("ACKCHYUALLY_AUTO_EXEC", "known_success")
+
+	// Seed a redacted invocation
+	// In reality, <redacted> is inserted by RedactArgs.
+	// But here we insert it directly into the DB to simulate a redacted stored command.
+	seedInvocation(t, ctxKey, "curl", []string{"curl", "<redacted>"}, time.Now(), 0)
+
+	code, _, _ := captureStdoutStderr(t, func() int {
+		c, ok := autoExecKnownSuccess("curl", ctxKey, []string{"curl", "foo"})
+		if ok {
+			return c
+		}
+		return -1
+	})
+	if code != -1 {
+		t.Errorf("autoExecKnownSuccess returned %d want -1 (ok=false) for redacted command", code)
+	}
+}

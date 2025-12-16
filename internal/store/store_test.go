@@ -175,6 +175,35 @@ func TestInsertInvocation_AndListSuccessful(t *testing.T) {
 	if len(none) != 0 {
 		t.Fatalf("expected empty for missingtool, got %#v", none)
 	}
+
+	// Insert invalid JSON to test robust unmarshalling
+	mustInsert(Invocation{
+		At:         base.Add(5 * time.Second),
+		DurationMS: 50,
+		ContextKey: ctxKey,
+		Tool:       "git",
+		ExePath:    "/usr/bin/git",
+		ArgvJSON:   "{invalid-json",
+		ExitCode:   0,
+		Mode:       "pipes",
+	})
+	cmdsInvalid, err := db.ListSuccessful("git", ctxKey, 10)
+	if err != nil {
+		t.Fatalf("ListSuccessful: %v", err)
+	}
+	// Should still be 2, ignoring the invalid one
+	if len(cmdsInvalid) != 2 {
+		t.Fatalf("expected 2 successful commands (ignoring invalid JSON), got %d", len(cmdsInvalid))
+	}
+}
+
+func TestNullIfZero(t *testing.T) {
+	if got := nullIfZero(0); got != nil {
+		t.Errorf("nullIfZero(0) = %v; want nil", got)
+	}
+	if got := nullIfZero(123); got != int64(123) {
+		t.Errorf("nullIfZero(123) = %v; want 123", got)
+	}
 }
 
 func TestListSuccessCandidates_GroupsCountsAndOrders(t *testing.T) {
