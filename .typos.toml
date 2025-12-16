@@ -7,3 +7,8 @@ verison = "verison"
 fial = "fial"
 protocl = "protocl"
 flter = "flter"
+# Intentional typo inputs in shim tests.
+helo = "helo"
+statu = "statu"
+succes = "succes"
+abd = "abd"
