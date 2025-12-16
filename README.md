@@ -14,44 +14,74 @@
 ![PkgGoDev](https://pkg.go.dev/badge/github.com/joelklabo/ackchyually.svg)
 ![Coverage](https://img.shields.io/endpoint?url=https://ackchyually.sh/coverage.json)
 ![Downloads](https://img.shields.io/github/downloads/joelklabo/ackchyually/total)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20linux%20%7C%20windows-blue)
 
 **ackchyually** — the “ackchyually…” friend for your CLI. Remembers what worked (per repo). Suggests the right command when you get the details wrong.
 
 ## PTY-first (hard requirement)
-If you're in a TTY, ackchyually runs tools under a real PTY. This is non-negotiable for interactive CLIs and agent shells (Claude Code / Codex CLI / Copilot CLI).
+If you're in a TTY, ackchyually runs tools under a real PTY. This is non-negotiable for interactive CLIs and agent shells (Claude Code / Codex CLI / Copilot CLI). On Windows, it uses ConPTY.
 
 ## Install
 
-### One-liner
+### macOS / Linux (One-liner)
 ```sh
 curl -fsSL https://ackchyually.sh/install.sh | sh
 ```
 
-### Manual
-Download a release from GitHub Releases and put `ackchyually` in your PATH.
+### Windows (Manual)
+Download the latest `ackchyually_Windows_x86_64.zip` (or arm64) from [GitHub Releases](https://github.com/joelklabo/ackchyually/releases), unzip it, and place `ackchyually.exe` in your PATH.
 
-## Quickstart
-1) Install shims:
+### Install Shims
+Once `ackchyually` is installed and in your PATH:
+
 ```sh
 ackchyually shim install git gh xcodebuild
 ```
 
-2) Ensure PATH starts with shim dir:
+### Verify
+Ensure your PATH is configured correctly so that `which git` (Unix) or `Get-Command git` (Windows) points to the shim:
+
 ```sh
-export PATH="$HOME/.local/share/ackchyually/shims:$PATH"
+# Unix
+which git
+# output should be: ~/.local/share/ackchyually/shims/git
+
+# Windows (PowerShell)
+(Get-Command git).Source
+# output should be: ...\ackchyually\shims\git.exe
 ```
 
-3) Use tools normally:
+If it doesn't point to the shim, follow the instructions printed by `ackchyually shim install` or run:
+
 ```sh
-git status
-xcodebuild test -scheme App
+ackchyually shim enable
 ```
 
-4) Query what worked:
-```sh
-ackchyually best --tool xcodebuild "test"
-ackchyually export --format md --tool xcodebuild
-```
+## Quickstart
+1) **Install shims** for tools you want to track:
+   ```sh
+   ackchyually shim install git gh xcodebuild
+   ```
+
+2) **Use tools normally**:
+   ```sh
+   git status
+   xcodebuild test -scheme App
+   ```
+
+3) **Get suggestions** when you make a mistake:
+   ```sh
+   $ git log -1 --prety=%s
+   error: unknown option `prety=%s'
+   ackchyually: suggestion (previous success in this repo):
+     git log -1 --pretty=%s
+   ```
+
+4) **Query what worked**:
+   ```sh
+   ackchyually best --tool xcodebuild "test"
+   ackchyually export --format md --tool xcodebuild
+   ```
 
 ## What it looks like (when it’s working)
 

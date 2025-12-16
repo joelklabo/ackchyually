@@ -65,7 +65,7 @@
         </p>
 
         <div class="cmd-card" aria-label="install">
-          <div class="cmd-card__label">Install</div>
+          <div class="cmd-card__label">macOS / Linux</div>
           <div class="cmd-card__row">
             <pre><code id="install-one-liner">curl -fsSL https://ackchyually.sh/install.sh | sh</code></pre>
             <button
@@ -76,6 +76,15 @@
             >
               Copy
             </button>
+          </div>
+        </div>
+
+        <div class="cmd-card" aria-label="install-windows" style="margin-top: 1rem;">
+          <div class="cmd-card__label">Windows</div>
+          <div class="cmd-card__row">
+            <span style="color: var(--fg-muted); font-family: var(--font-mono); font-size: 0.9rem;">
+              Download <a href="https://github.com/joelklabo/ackchyually/releases" style="color: var(--accent);">.zip from Releases</a>
+            </span>
           </div>
         </div>
 
@@ -91,10 +100,18 @@
       </section>
 
       <section>
-        <h2 class="h2">Quickstart</h2>
+        <h2 class="h2">Install Shims</h2>
         <div class="cmd-card">
-          <pre><code>ackchyually shim install git gh xcodebuild
-export PATH="$HOME/.local/share/ackchyually/shims:$PATH"</code></pre>
+          <pre><code>ackchyually shim install git gh xcodebuild</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">Verify</h2>
+        <div class="cmd-card">
+          <pre><code>export PATH="$HOME/.local/share/ackchyually/shims:$PATH"
+which git
+# should be: ~/.local/share/ackchyually/shims/git</code></pre>
         </div>
       </section>
 
@@ -102,11 +119,7 @@ export PATH="$HOME/.local/share/ackchyually/shims:$PATH"</code></pre>
         <h2 class="h2">Example</h2>
         <p class="p">If you’ve run a command successfully before in this repo/context, a later “usage-ish” failure triggers a suggestion:</p>
         <div class="cmd-card">
-          <pre><code>export PATH="$HOME/.local/share/ackchyually/shims:$PATH"
-which git
-# ~/.local/share/ackchyually/shims/git
-
-git log -1 --prety=%s
+          <pre><code>git log -1 --prety=%s
 ackchyually: suggestion (previous success in this repo):
   git log -1 --pretty=%s</code></pre>
         </div>
@@ -116,7 +129,7 @@ ackchyually: suggestion (previous success in this repo):
         <h2 class="h2">How it works</h2>
         <ul class="bullets">
           <li><strong>Transparent shims:</strong> you keep typing <code>git ...</code> normally.</li>
-          <li><strong>PTY-first:</strong> if you're in a TTY, tools run under a real PTY so interactive CLIs behave normally.</li>
+          <li><strong>PTY-first:</strong> if you're in a TTY, tools run under a real PTY so interactive CLIs behave normally (ConPTY on Windows).</li>
           <li><strong>Local memory:</strong> logs invocations (redacted) to SQLite, keyed by repo/cwd context.</li>
         </ul>
       </section>
