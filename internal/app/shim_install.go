@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -32,10 +33,8 @@ func shimInstall(tools []string) int {
 		if t == "ackchyually" || t == "ackchyually.exe" {
 			continue
 		}
-		dst := filepath.Join(shimDir, t)
-		_ = os.Remove(dst)
-		if err := os.Symlink(exe, dst); err != nil {
-			fmt.Fprintln(os.Stderr, "ackchyually: symlink failed:", err)
+		if err := installShim(shimDir, t, exe); err != nil {
+			fmt.Fprintln(os.Stderr, "ackchyually:", err)
 			return 1
 		}
 	}
@@ -69,19 +68,19 @@ func shimInstall(tools []string) int {
 		}
 	case found == -1:
 		fmt.Printf("%s: put shim dir first in PATH\n", u.Warn("Required"))
-		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
-		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
-		fmt.Println("  # or run: ackchyually shim enable")
+		printPathInstructions(shimDir)
 	case found > 0:
 		fmt.Printf("%s: shim dir must be first in PATH (currently index=%d)\n", u.Warn("Required"), found)
-		fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
-		fmt.Println("  # for future shells, add that line to your ~/.zshrc or ~/.bashrc")
-		fmt.Println("  # or run: ackchyually shim enable")
+		printPathInstructions(shimDir)
 	}
 
 	fmt.Println()
 	fmt.Printf("%s:\n", u.Bold("Refresh"))
-	fmt.Println("  hash -r 2>/dev/null || true")
+	if runtime.GOOS == "windows" {
+		fmt.Println("  # Restart your shell")
+	} else {
+		fmt.Println("  hash -r 2>/dev/null || true")
+	}
 	fmt.Println()
 	fmt.Printf("%s:\n", u.Bold("Verify"))
 	fmt.Printf("  which %s\n", tools[0])                            //nolint:gosec

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -115,6 +116,21 @@ func defaultRCFile(shellName string) (string, bool) {
 		return filepath.Join(home, ".bashrc"), true
 	case "fish":
 		return filepath.Join(home, ".config", "fish", "config.fish"), true
+	case "powershell", "pwsh":
+		// Simple heuristic: Windows PowerShell vs Core
+		if runtime.GOOS == "windows" {
+			// Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+			// or Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+			// Use generic profile path if we can find Documents
+			// This is tricky cross-platform.
+			// Let's assume standard location.
+			docs := filepath.Join(home, "Documents")
+			if shellName == "pwsh" {
+				return filepath.Join(docs, "PowerShell", "Microsoft.PowerShell_profile.ps1"), true
+			}
+			return filepath.Join(docs, "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"), true
+		}
+		return "", false
 	default:
 		return "", false
 	}
@@ -130,6 +146,11 @@ export PATH="%s:$PATH"
 	case "fish":
 		return fmt.Sprintf(`# ackchyually shims
 set -gx PATH "%s" $PATH
+# ackchyually shims end
+`, shimDir)
+	case "powershell", "pwsh":
+		return fmt.Sprintf(`# ackchyually shims
+$env:PATH = "%s;" + $env:PATH
 # ackchyually shims end
 `, shimDir)
 	default:
