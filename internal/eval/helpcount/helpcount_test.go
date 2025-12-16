@@ -1,6 +1,7 @@
 package helpcount
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -125,7 +126,7 @@ func TestExitCode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("sh not available on windows in CI")
 	}
-	err := exec.Command("sh", "-c", "exit 9").Run()
+	err := exec.CommandContext(context.Background(), "sh", "-c", "exit 9").Run()
 	if got := exitCode(err); got != 9 {
 		t.Fatalf("exitCode=%d want 9", got)
 	}
@@ -180,8 +181,11 @@ func TestLookPathEnv(t *testing.T) {
 
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "tool")
-	if err := os.WriteFile(bin, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nexit 0\n"), 0o600); err != nil {
 		t.Fatalf("write file: %v", err)
+	}
+	if err := os.Chmod(bin, 0o700); err != nil {
+		t.Fatalf("chmod file: %v", err)
 	}
 
 	path, err := lookPathEnv("tool", []string{"PATH=" + dir})

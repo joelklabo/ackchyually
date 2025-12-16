@@ -52,8 +52,14 @@ func TestMainOutputsMarkers(t *testing.T) {
 	_ = wOut.Close()
 	_ = wErr.Close()
 
-	outBytes, _ := io.ReadAll(rOut)
-	errBytes, _ := io.ReadAll(rErr)
+	outBytes, err := io.ReadAll(rOut)
+	if err != nil {
+		t.Fatalf("read stdout: %v", err)
+	}
+	errBytes, err := io.ReadAll(rErr)
+	if err != nil {
+		t.Fatalf("read stderr: %v", err)
+	}
 	out := string(outBytes) + string(errBytes)
 
 	for _, marker := range []string{"PROMPTLY_START", "PROMPTLY_END", "PROMPT enter y:"} {
