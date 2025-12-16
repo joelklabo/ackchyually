@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func ShimDir() string {
@@ -20,7 +19,7 @@ func ShimDir() string {
 
 func WhichSkippingShims(tool string) (string, error) {
 	pathEnv := os.Getenv("PATH")
-	parts := strings.Split(pathEnv, string(os.PathListSeparator))
+	parts := filepath.SplitList(pathEnv) // Use SplitList for cross-platform
 
 	shim := filepath.Clean(ShimDir())
 	for _, dir := range parts {
@@ -31,21 +30,9 @@ func WhichSkippingShims(tool string) (string, error) {
 		if dir == shim {
 			continue
 		}
-		candidate := filepath.Join(dir, tool)
-		if isExecutableFile(candidate) {
-			return candidate, nil
+		if found, ok := findExecutable(dir, tool); ok {
+			return found, nil
 		}
 	}
 	return "", errors.New(tool + " not found in PATH (excluding shims)")
-}
-
-func isExecutableFile(path string) bool {
-	st, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	if st.IsDir() {
-		return false
-	}
-	return st.Mode()&0o111 != 0
 }
