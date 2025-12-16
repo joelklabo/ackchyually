@@ -11,7 +11,7 @@ import (
 
 // writeExec writes an executable script.
 // name is usually "script".
-func writeExec(t *testing.T, dir, name, contentUnix, contentWin string) {
+func writeExec(t *testing.T, dir, name, contentUnix, contentWin string) { //nolint:unparam
 	t.Helper()
 	path := filepath.Join(dir, name)
 	content := contentUnix
