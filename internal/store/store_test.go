@@ -17,6 +17,7 @@ func setTempHome(t *testing.T) {
 		t.Fatalf("mkdir home: %v", err)
 	}
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // For Windows
 
 	// Guardrail: avoid writing to the developer's real home directory.
 	if d := dataDir(); !strings.HasPrefix(d, home+string(os.PathSeparator)) {

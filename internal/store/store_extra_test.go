@@ -16,6 +16,7 @@ func TestWithDB_OpenError(t *testing.T) {
 		t.Fatalf("write homefile: %v", err)
 	}
 	t.Setenv("HOME", homeFile)
+	t.Setenv("USERPROFILE", homeFile) // For Windows
 
 	err := WithDB(func(_ *DB) error {
 		return nil

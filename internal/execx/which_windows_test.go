@@ -5,6 +5,7 @@ package execx
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -17,7 +18,7 @@ func TestFindExecutable_Windows(t *testing.T) {
 		t.Fatalf("write bat: %v", err)
 	}
 
-	if got, ok := findExecutable(tmp, "script.bat"); !ok || got != bat {
+	if got, ok := findExecutable(tmp, "script.bat"); !ok || !strings.EqualFold(got, bat) {
 		t.Errorf("findExecutable(script.bat) = %q, %v; want %q, true", got, ok, bat)
 	}
 
