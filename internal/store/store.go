@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"os"
@@ -72,11 +73,11 @@ func Open() (*DB, error) {
 	}
 
 	var _mode string
-	if err := db.QueryRow(`PRAGMA journal_mode=WAL;`).Scan(&_mode); err != nil {
+	if err := db.QueryRowContext(context.Background(), `PRAGMA journal_mode=WAL;`).Scan(&_mode); err != nil {
 		_ = err // best-effort
 	}
 
-	if _, err := db.Exec(schema); err != nil {
+	if _, err := db.ExecContext(context.Background(), schema); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func WithDB(fn func(*DB) error) error {
 }
 
 func (db *DB) InsertInvocation(inv Invocation) error {
-	_, err := db.Exec(`
+	_, err := db.ExecContext(context.Background(), `
 INSERT INTO invocations
 (created_at, duration_ms, context_key, tool, exe_path, tool_id, argv_json, exit_code, mode, stdout_tail, stderr_tail, combined_tail)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -104,25 +105,25 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 }
 
 func (db *DB) UpsertTool(t ToolIdentity) (int64, error) {
-	if _, err := db.Exec(`INSERT OR IGNORE INTO tool_identities(exe_path, sha256, version_str) VALUES (?, ?, ?)`,
+	if _, err := db.ExecContext(context.Background(), `INSERT OR IGNORE INTO tool_identities(exe_path, sha256, version_str) VALUES (?, ?, ?)`,
 		t.ExePath, t.SHA256, t.VersionStr,
 	); err != nil {
 		return 0, err
 	}
 	var id int64
-	err := db.QueryRow(`SELECT id FROM tool_identities WHERE sha256 = ?`, t.SHA256).Scan(&id)
+	err := db.QueryRowContext(context.Background(), `SELECT id FROM tool_identities WHERE sha256 = ?`, t.SHA256).Scan(&id)
 	return id, err
 }
 
 func (db *DB) GetToolBySHA(sha string) (ToolIdentity, error) {
 	var t ToolIdentity
-	err := db.QueryRow(`SELECT id, exe_path, sha256, version_str FROM tool_identities WHERE sha256 = ?`, sha).
+	err := db.QueryRowContext(context.Background(), `SELECT id, exe_path, sha256, version_str FROM tool_identities WHERE sha256 = ?`, sha).
 		Scan(&t.ID, &t.ExePath, &t.SHA256, &t.VersionStr)
 	return t, err
 }
 
 func (db *DB) ListSuccessful(tool, ctxKey string, limit int) ([][]string, error) {
-	rows, err := db.Query(`
+	rows, err := db.QueryContext(context.Background(), `
 SELECT argv_json FROM invocations
 WHERE tool = ? AND context_key = ? AND exit_code = 0
 ORDER BY created_at DESC
@@ -144,11 +145,14 @@ LIMIT ?`, tool, ctxKey, limit)
 		}
 		out = append(out, argv)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
 func (db *DB) UpsertTag(t Tag) error {
-	_, err := db.Exec(`
+	_, err := db.ExecContext(context.Background(), `
 INSERT INTO tags(created_at, context_key, tag, tool, argv_json)
 VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?)
 ON CONFLICT(context_key, tag) DO UPDATE SET tool=excluded.tool, argv_json=excluded.argv_json
@@ -158,7 +162,7 @@ ON CONFLICT(context_key, tag) DO UPDATE SET tool=excluded.tool, argv_json=exclud
 
 func (db *DB) GetTag(ctxKey, tag string) (Tag, error) {
 	var t Tag
-	err := db.QueryRow(`SELECT context_key, tag, tool, argv_json FROM tags WHERE context_key=? AND tag=?`, ctxKey, tag).
+	err := db.QueryRowContext(context.Background(), `SELECT context_key, tag, tool, argv_json FROM tags WHERE context_key=? AND tag=?`, ctxKey, tag).
 		Scan(&t.ContextKey, &t.Tag, &t.Tool, &t.ArgvJSON)
 	return t, err
 }

@@ -1,6 +1,7 @@
 package execx
 
 import (
+	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -31,7 +32,7 @@ func Run(exe string, args []string) (Result, error) {
 }
 
 func runPTY(exe string, args []string) (Result, error) {
-	cmd := exec.Command(exe, args...)
+	cmd := exec.CommandContext(context.Background(), exe, args...)
 
 	ptmx, err := pty.Start(cmd)
 	if err != nil {

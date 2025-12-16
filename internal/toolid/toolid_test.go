@@ -13,6 +13,7 @@ func TestIdentify_UsesCachedSHAWhenFileUnreadable(t *testing.T) {
 	t.Setenv("HOME", filepath.Join(tmp, "home"))
 
 	exe := filepath.Join(tmp, "tool.sh")
+	//nolint:gosec
 	if err := os.WriteFile(exe, []byte(`#!/bin/sh
 if [ "${1:-}" = "--version" ]; then
   echo "v1"
@@ -50,6 +51,7 @@ func TestIdentify_RehashesWhenFileChanges(t *testing.T) {
 	t.Setenv("HOME", filepath.Join(tmp, "home"))
 
 	exe := filepath.Join(tmp, "tool.sh")
+	//nolint:gosec
 	if err := os.WriteFile(exe, []byte(`#!/bin/sh
 if [ "${1:-}" = "--version" ]; then
   echo "v1"
@@ -80,6 +82,7 @@ exit 0
 	}
 
 	// Modify the file (changes size + mtime), so we should rehash and get a new sha.
+	//nolint:gosec
 	if err := os.WriteFile(exe, []byte(`#!/bin/sh
 if [ "${1:-}" = "--version" ]; then
   echo "v2"

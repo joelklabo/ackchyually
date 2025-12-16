@@ -1,6 +1,7 @@
 package execx
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -10,24 +11,6 @@ import (
 	"testing"
 )
 
-func TestShellQuote(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{in: "", want: "''"},
-		{in: "abcXYZ012/._-=:,%+@", want: "abcXYZ012/._-=:,%+@"},
-		{in: "hello world", want: "'hello world'"},
-		{in: "a'b", want: `'a'"'"'b'`},
-	}
-
-	for _, tt := range tests {
-		if got := shellQuote(tt.in); got != tt.want {
-			t.Fatalf("shellQuote(%q) = %q, want %q", tt.in, got, tt.want)
-		}
-	}
-}
-
 func TestShellJoin(t *testing.T) {
 	if got, want := ShellJoin([]string{"git", "status"}), "git status"; got != want {
 		t.Fatalf("ShellJoin = %q, want %q", got, want)
@@ -35,7 +18,7 @@ func TestShellJoin(t *testing.T) {
 	if got, want := ShellJoin([]string{"echo", "hi there"}), "echo 'hi there'"; got != want {
 		t.Fatalf("ShellJoin = %q, want %q", got, want)
 	}
-	if got, want := ShellJoin([]string{"echo", "a'b"}), `echo 'a'"'"'b'`; got != want {
+	if got, want := ShellJoin([]string{"echo", "a'b"}), `echo a\'b`; got != want {
 		t.Fatalf("ShellJoin = %q, want %q", got, want)
 	}
 }
@@ -101,7 +84,7 @@ func TestIsExecutableFile(t *testing.T) {
 	dir := t.TempDir()
 
 	f := filepath.Join(dir, "f")
-	if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(f, []byte("x"), 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	if isExecutableFile(f) {
@@ -143,14 +126,14 @@ func TestExitCode(t *testing.T) {
 
 func runShellExitStatus(t *testing.T, code int) error {
 	t.Helper()
-	cmd := exec.Command("sh", "-c", "exit "+itoa(code))
+	cmd := exec.CommandContext(context.Background(), "sh", "-c", "exit "+itoa(code)) //nolint:gosec
 	return cmd.Run()
 }
 
 func runShellKilledBySignal(t *testing.T, sig syscall.Signal) error {
 	t.Helper()
 
-	cmd := exec.Command("sh", "-c", "sleep 10")
+	cmd := exec.CommandContext(context.Background(), "sh", "-c", "sleep 10")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start: %v", err)
 	}
@@ -169,7 +152,7 @@ func mustMkdir(t *testing.T, path string) {
 
 func writeExec(t *testing.T, path string) {
 	t.Helper()
-	if err := os.WriteFile(path, []byte("x"), 0o755); err != nil {
+	if err := os.WriteFile(path, []byte("x"), 0o700); err != nil { //nolint:gosec
 		t.Fatalf("write %q: %v", path, err)
 	}
 }

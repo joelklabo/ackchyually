@@ -48,7 +48,7 @@ func TestShimEnable_CreatesRCFileAndIsIdempotent(t *testing.T) {
 
 	rcPath := filepath.Join(home, ".zshrc")
 
-	code, out := captureStdout(t, func() int { return shimEnable(nil) })
+	code, out, _ := captureStdoutStderr(t, func() int { return shimEnable(nil) })
 	if code != 0 {
 		t.Fatalf("shimEnable returned %d want 0, got:\n%s", code, out)
 	}
@@ -64,7 +64,7 @@ func TestShimEnable_CreatesRCFileAndIsIdempotent(t *testing.T) {
 	}
 
 	// Calling again should be a no-op.
-	code, out = captureStdout(t, func() int { return shimEnable(nil) })
+	code, out, _ = captureStdoutStderr(t, func() int { return shimEnable(nil) })
 	if code != 0 {
 		t.Fatalf("shimEnable (second) returned %d want 0, got:\n%s", code, out)
 	}
@@ -125,7 +125,7 @@ func TestShimList_EmptyAndPopulated(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	// No shim dir.
-	code, out := captureStdout(t, func() int { return shimList(nil) })
+	code, out, _ := captureStdoutStderr(t, func() int { return shimList(nil) })
 	if code != 0 {
 		t.Fatalf("shimList returned %d want 0", code)
 	}
@@ -141,7 +141,7 @@ func TestShimList_EmptyAndPopulated(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "git"), "x", 0o755)
 	writeFile(t, filepath.Join(dir, "gh"), "x", 0o755)
 
-	code, out = captureStdout(t, func() int { return shimList(nil) })
+	code, out, _ = captureStdoutStderr(t, func() int { return shimList(nil) })
 	if code != 0 {
 		t.Fatalf("shimList returned %d want 0, got:\n%s", code, out)
 	}
@@ -179,7 +179,7 @@ func TestShimDoctor_ActiveShimsReturnsOK(t *testing.T) {
 
 	t.Setenv("PATH", strings.Join([]string{dir, realDir}, string(os.PathListSeparator)))
 
-	code, out := captureStdout(t, shimDoctor)
+	code, out, _ := captureStdoutStderr(t, shimDoctor)
 	if code != 0 {
 		t.Fatalf("shimDoctor returned %d want 0, got:\n%s", code, out)
 	}

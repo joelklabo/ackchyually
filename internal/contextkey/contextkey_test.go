@@ -74,7 +74,7 @@ func TestFindGitRoot_AcceptsGitFileMarker(t *testing.T) {
 	mkdirAll(t, sub)
 
 	// Some git setups (e.g., worktrees/submodules) can use a .git *file*.
-	if err := os.WriteFile(filepath.Join(root, ".git"), []byte("gitdir: /tmp/elsewhere\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".git"), []byte("gitdir: /tmp/elsewhere\n"), 0o600); err != nil {
 		t.Fatalf("write .git file: %v", err)
 	}
 

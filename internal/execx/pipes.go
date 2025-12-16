@@ -1,6 +1,7 @@
 package execx
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 func runPipes(exe string, args []string) (Result, error) {
-	cmd := exec.Command(exe, args...)
+	cmd := exec.CommandContext(context.Background(), exe, args...)
 	cmd.Stdin = os.Stdin
 
 	outTail := NewTail(64 * 1024)

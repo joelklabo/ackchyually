@@ -70,7 +70,7 @@ func fakeExitZeroUsageScenario() Scenario {
 		Tool:        "exit0tool",
 		Setup: func(env *Env) error {
 			bin := filepath.Join(env.WorkDir, "bin")
-			if err := os.MkdirAll(bin, 0o755); err != nil {
+			if err := os.MkdirAll(bin, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 
@@ -120,7 +120,7 @@ case "${1:-}" in
     ;;
 esac
 `
-			if err := os.WriteFile(toolPath, []byte(script), 0o755); err != nil {
+			if err := os.WriteFile(toolPath, []byte(script), 0o755); err != nil { //nolint:gosec
 				return err
 			}
 
@@ -148,7 +148,7 @@ func gitLogSubjectScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -163,7 +163,7 @@ func gitLogSubjectScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "hello.txt"), []byte("hello\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "hello.txt"), []byte("hello\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -301,7 +301,7 @@ func gitSwitchConflictingCreateFlagsScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -328,7 +328,7 @@ func gitSwitchOnlyOneReferenceExpectedScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -355,7 +355,7 @@ func gitCheckoutDetachConflictsWithCreateScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -382,7 +382,7 @@ func gitCheckoutNeedsPathsScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -397,7 +397,7 @@ func gitCheckoutNeedsPathsScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("base\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("base\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "a.txt"); err != nil {
@@ -410,7 +410,7 @@ func gitCheckoutNeedsPathsScenario() Scenario {
 			if _, err := env.RunDirect("git", "checkout", "-b", "feature", "-q"); err != nil {
 				return fmt.Errorf("git checkout -b feature: %w", err)
 			}
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("feature\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("feature\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "commit", "-am", "feature", "-q"); err != nil {
@@ -420,7 +420,7 @@ func gitCheckoutNeedsPathsScenario() Scenario {
 			if _, err := env.RunDirect("git", "checkout", "main", "-q"); err != nil {
 				return fmt.Errorf("git checkout main: %w", err)
 			}
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("main\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("main\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "commit", "-am", "main", "-q"); err != nil {
@@ -455,7 +455,7 @@ func gitRevParseMissingRevisionScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -470,7 +470,7 @@ func gitRevParseMissingRevisionScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -498,7 +498,7 @@ func gitShowUnknownRevisionScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -513,7 +513,7 @@ func gitShowUnknownRevisionScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -609,7 +609,7 @@ func gitDiffNameOnlyScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -624,7 +624,7 @@ func gitDiffNameOnlyScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -634,7 +634,7 @@ func gitDiffNameOnlyScenario() Scenario {
 				return fmt.Errorf("git commit: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a2\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a2\n"), 0o600); err != nil {
 				return err
 			}
 			return nil
@@ -676,7 +676,7 @@ func gitCommitMissingValueScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -709,7 +709,7 @@ func gitConfigWrongNumberOfArgsScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -751,7 +751,7 @@ func gitAddPathspecScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -759,7 +759,7 @@ func gitAddPathspecScenario() Scenario {
 			if _, err := env.RunDirect("git", "init", "-q", "-b", "main"); err != nil {
 				return fmt.Errorf("git init: %w", err)
 			}
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			return nil
@@ -781,7 +781,7 @@ func gitBranchNameRequiredScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -796,7 +796,7 @@ func gitBranchNameRequiredScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -830,7 +830,7 @@ func gitStatusTypoScenario() Scenario {
 		Tool:        "git",
 		Setup: func(env *Env) error {
 			repo := filepath.Join(env.WorkDir, "repo")
-			if err := os.MkdirAll(repo, 0o755); err != nil {
+			if err := os.MkdirAll(repo, 0o755); err != nil { //nolint:gosec
 				return err
 			}
 			env.WorkDir = repo
@@ -845,7 +845,7 @@ func gitStatusTypoScenario() Scenario {
 				return fmt.Errorf("git config user.name: %w", err)
 			}
 
-			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o600); err != nil {
 				return err
 			}
 			if _, err := env.RunDirect("git", "add", "."); err != nil {
@@ -987,12 +987,12 @@ func goUnknownCommandScenario() Scenario {
 
 func setupGoTestModule(env *Env) error {
 	mod := filepath.Join(env.WorkDir, "gomod")
-	if err := os.MkdirAll(mod, 0o755); err != nil {
+	if err := os.MkdirAll(mod, 0o755); err != nil { //nolint:gosec
 		return err
 	}
 	env.WorkDir = mod
 
-	if err := os.WriteFile(filepath.Join(mod, "go.mod"), []byte("module example.com/ackchyually-eval\ngo 1.24.0\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(mod, "go.mod"), []byte("module example.com/ackchyually-eval\ngo 1.24.0\n"), 0o600); err != nil {
 		return err
 	}
 	const testSrc = `package main
@@ -1001,7 +1001,7 @@ import "testing"
 
 func TestOK(t *testing.T) {}
 `
-	if err := os.WriteFile(filepath.Join(mod, "ok_test.go"), []byte(testSrc), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(mod, "ok_test.go"), []byte(testSrc), 0o600); err != nil {
 		return err
 	}
 	return nil

@@ -1,5 +1,7 @@
 package store
 
+import "context"
+
 type ToolPathCache struct {
 	ExePath     string
 	FileSize    int64
@@ -9,7 +11,7 @@ type ToolPathCache struct {
 
 func (db *DB) GetToolPathCache(exePath string) (ToolPathCache, error) {
 	var c ToolPathCache
-	err := db.QueryRow(`
+	err := db.QueryRowContext(context.Background(), `
 SELECT exe_path, file_size, file_mtime_ns, sha256
 FROM tool_path_cache
 WHERE exe_path = ?`, exePath).Scan(&c.ExePath, &c.FileSize, &c.FileMtimeNS, &c.SHA256)
@@ -20,7 +22,7 @@ WHERE exe_path = ?`, exePath).Scan(&c.ExePath, &c.FileSize, &c.FileMtimeNS, &c.S
 }
 
 func (db *DB) UpsertToolPathCache(c ToolPathCache) error {
-	_, err := db.Exec(`
+	_, err := db.ExecContext(context.Background(), `
 INSERT INTO tool_path_cache(exe_path, file_size, file_mtime_ns, sha256, updated_at)
 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
 ON CONFLICT(exe_path) DO UPDATE SET

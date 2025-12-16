@@ -204,7 +204,7 @@ func TestRunCLI_Best_PrintsKnownGood(t *testing.T) {
 
 	now := time.Now()
 	seedInvocation(t, ctxKey, "git", []string{"git", "status"}, now.Add(-time.Minute), 0)
-	seedInvocation(t, ctxKey, "git", []string{"git", "commit", "-m", "msg"}, now.Add(-2*time.Minute), 0)
+	seedInvocation(t, ctxKey, "git", []string{"git", "commit", "-m", "msg"}, now.Add(-2*time.Minute), 1)
 
 	code, out, errOut := captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"best", "--tool", "git", "status"})
@@ -311,4 +311,31 @@ func getTagDirect(ctxKey, tag string) (store.Tag, error) {
 		return nil
 	})
 	return out, err
+}
+
+func TestRunCLI_LogDBError(t *testing.T) {
+	setTempHomeAndCWD(t)
+
+	// Ensure DB dir exists
+	dbDir := filepath.Join(os.Getenv("HOME"), ".local", "share", "ackchyually")
+	if err := os.MkdirAll(dbDir, 0o755); err != nil {
+		t.Fatalf("mkdir db dir: %v", err)
+	}
+
+	// Corrupt DB
+	dbPath := filepath.Join(dbDir, "ackchyually.sqlite")
+	if err := os.WriteFile(dbPath, []byte("not a sqlite file"), 0o600); err != nil {
+		t.Fatalf("corrupt db: %v", err)
+	}
+
+	// RunCLI should not crash, but it might log an error or just ignore it.
+	// logCLIInvocation ignores the error: _ = err // best-effort
+
+	code, _, _ := captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"version"})
+	})
+
+	if code != 0 {
+		t.Errorf("RunCLI returned %d want 0", code)
+	}
 }

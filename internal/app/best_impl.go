@@ -40,7 +40,7 @@ func bestImpl(tool, query string) int {
 		return 1
 	}
 
-	var scoredList []scored
+	scoredList := make([]scored, 0, len(cands))
 	for _, c := range cands {
 		cmdStr := strings.ToLower(execx.ShellJoin(c.Argv))
 		match := countMatches(cmdStr, qTokens)
@@ -189,7 +189,7 @@ func exportImpl(format, tool string) int {
 				Tags    []exportTag `json:"tags"`
 			}
 
-			var outTags []exportTag
+			outTags := make([]exportTag, 0, len(tags))
 			for _, tg := range tags {
 				argv := exportDecodeArgv(tg.ArgvJSON)
 				argv = exportNormalizeArgv(argv, home, repoRoot)

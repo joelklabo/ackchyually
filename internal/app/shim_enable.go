@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+
 	"github.com/joelklabo/ackchyually/internal/ui"
 )
 
@@ -41,7 +43,9 @@ func shimEnable(args []string) int {
 			return 2
 		}
 	}
-	path = expandHome(path)
+	if expanded, err := homedir.Expand(path); err == nil {
+		path = expanded
+	}
 	if path == "" {
 		fmt.Fprintln(os.Stderr, "ackchyually: cannot determine rc file path")
 		return 1
@@ -131,29 +135,6 @@ set -gx PATH "%s" $PATH
 	default:
 		return ""
 	}
-}
-
-func expandHome(path string) string {
-	if path == "" {
-		return path
-	}
-	if !strings.HasPrefix(path, "~") {
-		return path
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = os.Getenv("HOME")
-	}
-	if home == "" {
-		return path
-	}
-	if path == "~" {
-		return home
-	}
-	if strings.HasPrefix(path, "~/") {
-		return filepath.Join(home, path[2:])
-	}
-	return path
 }
 
 func readFileWithMode(path string) (content string, mode os.FileMode, err error) {
