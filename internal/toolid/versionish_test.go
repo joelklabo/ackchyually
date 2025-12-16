@@ -30,6 +30,7 @@ func TestDetectVersion_TriesFallbackWhenOutputNotVersionish(t *testing.T) {
 	tmp := t.TempDir()
 
 	exe := filepath.Join(tmp, "tool.sh")
+	//nolint:gosec
 	if err := os.WriteFile(exe, []byte(`#!/bin/sh
 if [ "${1:-}" = "--version" ]; then
   echo "usage: tool [flags]"

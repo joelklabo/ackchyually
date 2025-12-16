@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -80,12 +81,12 @@ func shimCmd(args []string) int {
 func bestCmd(args []string) int {
 	fs := flag.NewFlagSet("best", flag.ContinueOnError)
 	tool := fs.String("tool", "", "tool name (required)")
-	if err := fs.Parse(args); err != nil {
+	if err := parseFlags(fs, args); err != nil {
 		return 2
 	}
 	q := ""
 	if fs.NArg() > 0 {
-		q = fs.Arg(0)
+		q = strings.Join(fs.Args(), " ")
 	}
 	if *tool == "" {
 		fmt.Fprintln(os.Stderr, "best: --tool is required")
@@ -98,10 +99,55 @@ func exportCmd(args []string) int {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
 	format := fs.String("format", "md", "md|json")
 	tool := fs.String("tool", "", "tool name (optional)")
-	if err := fs.Parse(args); err != nil {
+	if err := parseFlags(fs, args); err != nil {
 		return 2
 	}
 	return exportImpl(*format, *tool)
+}
+
+func parseFlags(fs *flag.FlagSet, args []string) error {
+	var flagArgs []string
+	var posArgs []string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			posArgs = append(posArgs, args[i:]...)
+			break
+		}
+		if strings.HasPrefix(arg, "-") {
+			name := strings.TrimLeft(arg, "-")
+			if idx := strings.Index(name, "="); idx != -1 {
+				name = name[:idx]
+			}
+
+			f := fs.Lookup(name)
+			if f == nil {
+				// Unknown flag, treat as positional
+				posArgs = append(posArgs, arg)
+				continue
+			}
+
+			flagArgs = append(flagArgs, arg)
+
+			// Check if it's a bool flag
+			isBool := false
+			if bf, ok := f.Value.(interface{ IsBoolFlag() bool }); ok {
+				isBool = bf.IsBoolFlag()
+			}
+
+			if !isBool && !strings.Contains(arg, "=") {
+				if i+1 < len(args) {
+					flagArgs = append(flagArgs, args[i+1])
+					i++
+				}
+			}
+		} else {
+			posArgs = append(posArgs, arg)
+		}
+	}
+
+	return fs.Parse(append(flagArgs, posArgs...))
 }
 
 func tagCmd(args []string) int {

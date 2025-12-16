@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,7 +50,7 @@ func TestOpen_CreatesSchemaTables(t *testing.T) {
 	db := openTestDB(t)
 
 	var n int
-	if err := db.QueryRow(`
+	if err := db.QueryRowContext(context.Background(), `
 SELECT COUNT(*)
 FROM sqlite_master
 WHERE type = 'table'
@@ -64,7 +65,7 @@ WHERE type = 'table'
 func TestOpen_FailsWhenHomeIsFile(t *testing.T) {
 	tmp := t.TempDir()
 	homeFile := filepath.Join(tmp, "homefile")
-	if err := os.WriteFile(homeFile, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(homeFile, []byte("x"), 0o600); err != nil {
 		t.Fatalf("write homefile: %v", err)
 	}
 	t.Setenv("HOME", homeFile)
@@ -82,7 +83,7 @@ func TestWithDB_CallsFn(t *testing.T) {
 	if err := WithDB(func(db *DB) error {
 		called = true
 		var one int
-		return db.QueryRow(`SELECT 1`).Scan(&one)
+		return db.QueryRowContext(context.Background(), `SELECT 1`).Scan(&one)
 	}); err != nil {
 		t.Fatalf("WithDB: %v", err)
 	}

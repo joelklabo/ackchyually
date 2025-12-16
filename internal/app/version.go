@@ -39,13 +39,17 @@ func printVersion() {
 }
 
 func getVersionInfo() versionInfo {
+	return getVersionInfoWithReader(debug.ReadBuildInfo)
+}
+
+func getVersionInfoWithReader(readBuildInfo func() (*debug.BuildInfo, bool)) versionInfo {
 	v := versionInfo{
 		Version: normalizeVersion(buildVersion),
 		Commit:  strings.TrimSpace(buildCommit),
 		Date:    strings.TrimSpace(buildDate),
 	}
 
-	if bi, ok := debug.ReadBuildInfo(); ok {
+	if bi, ok := readBuildInfo(); ok {
 		// If this is a module build (not a local "devel" build), use its version
 		// unless we already have an explicit buildVersion.
 		if (v.Version == "" || v.Version == "dev") && bi.Main.Version != "" && bi.Main.Version != "(devel)" {

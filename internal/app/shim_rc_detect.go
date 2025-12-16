@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 func detectPersistedShims(shimDir string) (string, bool) {
@@ -41,7 +43,9 @@ func shellRCCandidates(shellName, home string) []string {
 		if path == "" {
 			return out
 		}
-		path = expandHome(path)
+		if expanded, err := homedir.Expand(path); err == nil {
+			path = expanded
+		}
 		if path == "" {
 			return out
 		}

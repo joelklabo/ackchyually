@@ -56,7 +56,7 @@ func main() {
 	os.Exit(run())
 }
 
-func run() int {
+func run() int { //nolint:gocyclo
 	var (
 		count     = flag.Int("count", 250, "number of distinct executables to smoke-test")
 		install   = flag.Bool("install", false, "brew install missing formulae (slow/expensive)")
@@ -456,7 +456,7 @@ func runAckchyually(ctx context.Context, ackPath string, env []string, args []st
 }
 
 func isBrewInstalled(formula string) (bool, error) {
-	cmd := exec.Command("brew", "list", "--versions", formula)
+	cmd := exec.CommandContext(context.Background(), "brew", "list", "--versions", formula)
 	if err := cmd.Run(); err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
@@ -468,7 +468,7 @@ func isBrewInstalled(formula string) (bool, error) {
 }
 
 func brewPrefix(formula string) (string, error) {
-	cmd := exec.Command("brew", "--prefix", formula)
+	cmd := exec.CommandContext(context.Background(), "brew", "--prefix", formula)
 	b, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -477,14 +477,14 @@ func brewPrefix(formula string) (string, error) {
 }
 
 func runBrew(args ...string) error {
-	cmd := exec.Command("brew", args...)
+	cmd := exec.CommandContext(context.Background(), "brew", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func buildBinary(repoRoot, pkg, out string) error {
-	cmd := exec.Command("go", "build", "-o", out, pkg)
+	cmd := exec.CommandContext(context.Background(), "go", "build", "-o", out, pkg)
 	cmd.Dir = repoRoot
 	b, err := cmd.CombinedOutput()
 	if err != nil {

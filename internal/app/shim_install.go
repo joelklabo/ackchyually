@@ -84,10 +84,10 @@ func shimInstall(tools []string) int {
 	fmt.Println("  hash -r 2>/dev/null || true")
 	fmt.Println()
 	fmt.Printf("%s:\n", u.Bold("Verify"))
-	fmt.Printf("  which %s\n", tools[0])
-	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0])
+	fmt.Printf("  which %s\n", tools[0])                            //nolint:gosec
+	fmt.Printf("  # %s%c%s\n", shimDir, os.PathSeparator, tools[0]) //nolint:gosec
 	fmt.Println()
-	fmt.Println(u.Dim(fmt.Sprintf("If it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.", tools[0])))
+	fmt.Println(u.Dim(fmt.Sprintf("If it prints something like /opt/homebrew/bin/%s, your shim dir isn't taking effect.", tools[0]))) //nolint:gosec
 
 	return 0
 }
@@ -104,7 +104,7 @@ func shimUninstall(tools []string) int {
 	return 0
 }
 
-func shimDoctor() int {
+func shimDoctor() int { //nolint:gocyclo
 	shimDir := shimDir()
 	u := ui.New(os.Stdout)
 

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"strings"
@@ -14,7 +15,7 @@ type SuccessCandidate struct {
 }
 
 func (db *DB) ListSuccessCandidates(tool, ctxKey string, limit int) ([]SuccessCandidate, error) {
-	rows, err := db.Query(`
+	rows, err := db.QueryContext(context.Background(), `
 SELECT argv_json, COUNT(*) as n, MAX(created_at) as last_at
 FROM invocations
 WHERE tool = ? AND context_key = ? AND exit_code = 0
@@ -41,6 +42,9 @@ LIMIT ?`, tool, ctxKey, limit)
 		}
 
 		out = append(out, SuccessCandidate{Argv: argv, Count: n, Last: parseDBTime(lastRaw.String)})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

@@ -21,6 +21,16 @@ linters:
     - unparam
     - unused
     - whitespace
+    - gosec
+    - prealloc
+    - nakedret
+    - gocyclo
+    - dogsled
+    - goprintffuncname
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - tparallel
   settings:
     errcheck:
       check-type-assertions: true
@@ -44,6 +54,10 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
 formatters:
   enable:
     - gofmt

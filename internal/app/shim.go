@@ -266,7 +266,7 @@ func stripANSI(s string) string {
 	return string(out)
 }
 
-func looksUsageish(t string) bool {
+func looksUsageish(t string) bool { //nolint:gocyclo
 	return execx.ContainsFold(t, "usage:") ||
 		execx.ContainsFold(t, "usage of") ||
 		execx.ContainsFold(t, "flag provided but not defined") ||
@@ -604,7 +604,7 @@ func suggestKnownGood(tool, ctxKey string, argvSafe []string) {
 }
 
 func suggestNoKnownGood(tool string) {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
+	if os.Getenv("ACKCHYUALLY_TEST_FORCE_TTY") != "true" && !term.IsTerminal(int(os.Stderr.Fd())) {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "ackchyually: no known-good %s command saved for this repo yet\n", tool)

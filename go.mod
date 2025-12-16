@@ -5,6 +5,8 @@ go 1.24.0
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/mitchellh/go-homedir v1.1.0
 	golang.org/x/term v0.38.0
 	modernc.org/sqlite v1.40.1
 )

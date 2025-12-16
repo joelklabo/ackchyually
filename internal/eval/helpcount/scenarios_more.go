@@ -382,11 +382,11 @@ esac
 
 func writeToolScript(env *Env, tool, script string) error {
 	bin := filepath.Join(env.WorkDir, "bin")
-	if err := os.MkdirAll(bin, 0o755); err != nil {
+	if err := os.MkdirAll(bin, 0o755); err != nil { //nolint:gosec
 		return err
 	}
 	toolPath := filepath.Join(bin, tool)
-	if err := os.WriteFile(toolPath, []byte(script), 0o755); err != nil {
+	if err := os.WriteFile(toolPath, []byte(script), 0o755); err != nil { //nolint:gosec
 		return err
 	}
 

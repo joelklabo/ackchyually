@@ -2,6 +2,7 @@ package helpcount
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -170,7 +171,7 @@ func filterScenarios(in []Scenario, substr string) []Scenario {
 	return out
 }
 
-func (r *Runner) runOne(s Scenario, mode Mode) RunResult {
+func (r *Runner) runOne(s Scenario, mode Mode) RunResult { //nolint:gocyclo
 	env, err := NewEnv(r.ackPath)
 	if err != nil {
 		return RunResult{Mode: mode, Error: err.Error()}
@@ -387,7 +388,7 @@ func (e *Env) run(name string, args []string, env []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(context.Background(), path, args...)
 	cmd.Dir = e.WorkDir
 	cmd.Env = env
 	var stdout, stderr bytes.Buffer
@@ -415,7 +416,7 @@ func (e *Env) CountHelpInvocations(tool string, helpArgs []string) (int, error) 
 	}
 	defer db.Close()
 
-	rows, err := db.Query(`SELECT argv_json FROM invocations WHERE tool = ? ORDER BY created_at ASC`, tool)
+	rows, err := db.QueryContext(context.Background(), `SELECT argv_json FROM invocations WHERE tool = ? ORDER BY created_at ASC`, tool)
 	if err != nil {
 		return 0, err
 	}
@@ -478,7 +479,7 @@ func ExtractSuggestion(output string) (string, bool) {
 }
 
 func buildBinary(repoRoot, pkg, out string) error {
-	cmd := exec.Command("go", "build", "-o", out, pkg)
+	cmd := exec.CommandContext(context.Background(), "go", "build", "-o", out, pkg)
 	cmd.Dir = repoRoot
 	b, err := cmd.CombinedOutput()
 	if err != nil {

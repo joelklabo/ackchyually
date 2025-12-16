@@ -2,12 +2,14 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -53,7 +55,7 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 
 	must(t, pty.Setsize(ptmx, &pty.Winsize{Rows: 24, Cols: 80}))
 
-	cmd := exec.Command(shimTool)
+	cmd := exec.CommandContext(context.Background(), shimTool)
 	cmd.Env = append(os.Environ(),
 		"HOME="+home,
 		"PATH="+strings.Join([]string{shimDir, realDir}, string(os.PathListSeparator)),
@@ -63,7 +65,7 @@ func TestPTY_ShimRunsToolInPTY_AndPropagatesResize(t *testing.T) {
 	cmd.Stdout = tty
 	cmd.Stderr = tty
 
-	var buf bytes.Buffer
+	var buf safeBuffer
 	done := make(chan struct{})
 	go func() {
 		if _, err := io.Copy(&buf, ptmx); err != nil {
@@ -147,7 +149,7 @@ func TestPipes_NonInteractiveUsesPipes(t *testing.T) {
 	shimTool := filepath.Join(shimDir, "promptly")
 	must(t, os.Symlink(ack, shimTool))
 
-	cmd := exec.Command(shimTool)
+	cmd := exec.CommandContext(context.Background(), shimTool)
 	cmd.Env = append(os.Environ(),
 		"HOME="+home,
 		"PATH="+strings.Join([]string{shimDir, realDir}, string(os.PathListSeparator)),
@@ -185,7 +187,7 @@ func repoRoot(t *testing.T) string {
 
 func build(t *testing.T, dir, pkg, out string) {
 	t.Helper()
-	cmd := exec.Command("go", "build", "-o", out, pkg)
+	cmd := exec.CommandContext(context.Background(), "go", "build", "-o", out, pkg)
 	cmd.Dir = dir
 	if b, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go build %s failed: %v\n%s", pkg, err, string(b))
@@ -209,7 +211,7 @@ func must(t *testing.T, err error) {
 	}
 }
 
-func waitContains(t *testing.T, buf *bytes.Buffer, needle string) {
+func waitContains(t *testing.T, buf *safeBuffer, needle string) {
 	t.Helper()
 	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
@@ -219,6 +221,23 @@ func waitContains(t *testing.T, buf *bytes.Buffer, needle string) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("timeout waiting for %q\nOUTPUT:\n%s", needle, buf.String())
+}
+
+type safeBuffer struct {
+	b bytes.Buffer
+	m sync.Mutex
+}
+
+func (s *safeBuffer) Write(p []byte) (n int, err error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	return s.b.Write(p)
+}
+
+func (s *safeBuffer) String() string {
+	s.m.Lock()
+	defer s.m.Unlock()
+	return s.b.String()
 }
 
 func waitCmd(t *testing.T, cmd *exec.Cmd, timeout time.Duration) error {
