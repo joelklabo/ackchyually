@@ -18,6 +18,8 @@ jobs:
           cache: true
 
       - name: Run helpcount eval
+        env:
+          GOENV: ${{ runner.temp }}/go-eval-helpcount-env
         run: |
           set -euo pipefail
           go run ./cmd/ackchyually-eval -json > helpcount.json
