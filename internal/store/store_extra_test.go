@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +17,7 @@ func TestWithDB_OpenError(t *testing.T) {
 	}
 	t.Setenv("HOME", homeFile)
 
-	err := WithDB(func(db *DB) error {
+	err := WithDB(func(_ *DB) error {
 		return nil
 	})
 	if err == nil {
@@ -39,7 +40,7 @@ func TestDBMethods_ErrorClosedDB(t *testing.T) {
 	if err := db.UpsertToolPathCache(ToolPathCache{ExePath: "/bin/git"}); err == nil {
 		t.Error("UpsertToolPathCache: expected error on closed DB")
 	}
-	
+
 	if _, err := db.ListSuccessful("git", "ctx", 10); err == nil {
 		t.Error("ListSuccessful: expected error on closed DB")
 	}
@@ -47,15 +48,15 @@ func TestDBMethods_ErrorClosedDB(t *testing.T) {
 	if err := db.InsertInvocation(Invocation{}); err == nil {
 		t.Error("InsertInvocation: expected error on closed DB")
 	}
-	
+
 	if err := db.UpsertTag(Tag{}); err == nil {
 		t.Error("UpsertTag: expected error on closed DB")
 	}
-	
+
 	if _, err := db.GetTag("ctx", "tag"); err == nil {
 		t.Error("GetTag: expected error on closed DB")
 	}
-	
+
 	if _, err := db.GetToolBySHA("sha"); err == nil {
 		t.Error("GetToolBySHA: expected error on closed DB")
 	}
@@ -64,7 +65,7 @@ func TestDBMethods_ErrorClosedDB(t *testing.T) {
 func TestGetToolPathCache_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	_, err := db.GetToolPathCache("/missing")
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected ErrNoRows, got %v", err)
 	}
 }

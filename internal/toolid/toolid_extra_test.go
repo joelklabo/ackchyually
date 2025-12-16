@@ -36,10 +36,12 @@ func TestIdentify_DetectVersionTimeout(t *testing.T) {
 	tmp := t.TempDir()
 	exe := filepath.Join(tmp, "slow.sh")
 	// Sleeps 1 second, longer than 800ms timeout
-	if err := os.WriteFile(exe, []byte(`#!/bin/sh
+	//nolint:gosec
+	err := os.WriteFile(exe, []byte(`#!/bin/sh
 sleep 1
 echo "v1"
-`), 0o755); err != nil {
+`), 0o755)
+	if err != nil {
 		t.Fatalf("write slow script: %v", err)
 	}
 

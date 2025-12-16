@@ -22,7 +22,7 @@ func installShimWindows(shimDir string, tool string, exe string) error {
 	if err != nil {
 		return fmt.Errorf("read executable: %w", err)
 	}
-	if err := os.WriteFile(dst, input, 0o755); err != nil {
+	if err := os.WriteFile(dst, input, 0o755); err != nil { //nolint:gosec
 		return fmt.Errorf("write shim: %w", err)
 	}
 	return nil

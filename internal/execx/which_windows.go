@@ -20,7 +20,7 @@ func findExecutable(dir, tool string) (string, bool) {
 	if pathext == "" {
 		pathext = ".COM;.EXE;.BAT;.CMD"
 	}
-	
+
 	for _, ext := range strings.Split(pathext, ";") {
 		if ext == "" {
 			continue

@@ -34,7 +34,7 @@ func TestShimEnable_UnknownShell_Arg(t *testing.T) {
 func TestShimEnable_DetectShell(t *testing.T) {
 	// Mock SHELL env
 	t.Setenv("SHELL", "/bin/zsh")
-	
+
 	// Mock HOME to avoid editing real RC
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
@@ -48,7 +48,7 @@ func TestShimEnable_DetectShell(t *testing.T) {
 	if !strings.Contains(out, "enabled shims in") {
 		t.Errorf("expected success msg, got:\n%s", out)
 	}
-	
+
 	rcPath := filepath.Join(tmp, ".zshrc")
 	content, err := os.ReadFile(rcPath)
 	if err != nil {
@@ -73,14 +73,14 @@ func TestShimEnable_DetectShell(t *testing.T) {
 func TestShimEnable_File(t *testing.T) {
 	tmp := t.TempDir()
 	rc := filepath.Join(tmp, "custom.rc")
-	
+
 	code, _, _ := captureStdoutStderr(t, func() int {
 		return shimEnable([]string{"--shell=bash", "--file=" + rc})
 	})
 	if code != 0 {
 		t.Errorf("shimEnable(file) = %d; want 0", code)
 	}
-	
+
 	content, err := os.ReadFile(rc)
 	if err != nil {
 		t.Fatalf("read rc: %v", err)
@@ -95,13 +95,13 @@ func TestShimEnable_WriteError(t *testing.T) {
 	// Create directory where file should be to cause error?
 	// No, writeFileAtomic will try to write to tmp file then rename.
 	// Make directory read-only?
-	
+
 	rcDir := filepath.Join(tmp, "readonly")
 	if err := os.Mkdir(rcDir, 0o500); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	rc := filepath.Join(rcDir, ".bashrc")
-	
+
 	code, _, errOut := captureStdoutStderr(t, func() int {
 		return shimEnable([]string{"--shell=bash", "--file=" + rc})
 	})

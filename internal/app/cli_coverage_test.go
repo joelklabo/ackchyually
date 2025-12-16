@@ -10,7 +10,10 @@ import (
 
 func TestBestCmd_MissingTool(t *testing.T) {
 	// Capture stderr
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
 	oldStderr := os.Stderr
 	os.Stderr = w
 	defer func() { os.Stderr = oldStderr }()
@@ -23,7 +26,10 @@ func TestBestCmd_MissingTool(t *testing.T) {
 		t.Errorf("bestCmd(no tool) = %d; want 2", code)
 	}
 
-	out, _ := io.ReadAll(r)
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(string(out), "required") {
 		t.Errorf("expected required error, got %q", string(out))
 	}
@@ -42,7 +48,10 @@ func TestExportCmd_Flags(t *testing.T) {
 	}
 
 	// Test invalid flag
-	_, w, _ := os.Pipe()
+	_, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
 	oldStderr := os.Stderr
 	os.Stderr = w
 	defer func() { os.Stderr = oldStderr }()
@@ -105,7 +114,10 @@ func TestParseFlags_EdgeCases(t *testing.T) {
 
 func TestRunShim_WhichFails(t *testing.T) {
 	// Capture stderr
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
 	oldStderr := os.Stderr
 	os.Stderr = w
 	defer func() { os.Stderr = oldStderr }()
@@ -116,8 +128,11 @@ func TestRunShim_WhichFails(t *testing.T) {
 	if code != 127 {
 		t.Errorf("RunShim(missing) = %d; want 127", code)
 	}
-	
-	out, _ := io.ReadAll(r)
+
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(string(out), "executable file not found") && !strings.Contains(string(out), "not found") {
 		// Exact message depends on OS
 		t.Logf("stderr: %q", string(out))

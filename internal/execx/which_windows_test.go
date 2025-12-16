@@ -16,7 +16,7 @@ func TestFindExecutable_Windows(t *testing.T) {
 	if err := os.WriteFile(bat, []byte(""), 0o700); err != nil {
 		t.Fatalf("write bat: %v", err)
 	}
-	
+
 	if got, ok := findExecutable(tmp, "script.bat"); !ok || got != bat {
 		t.Errorf("findExecutable(script.bat) = %q, %v; want %q, true", got, ok, bat)
 	}
@@ -24,7 +24,7 @@ func TestFindExecutable_Windows(t *testing.T) {
 	// 2. Extension inference via PATHEXT
 	// Default PATHEXT usually includes .BAT, but we can set it explicitly to be safe
 	t.Setenv("PATHEXT", ".EXE;.BAT")
-	
+
 	if got, ok := findExecutable(tmp, "script"); !ok || got != bat {
 		t.Errorf("findExecutable(script) [implicit .bat] = %q, %v; want %q, true", got, ok, bat)
 	}

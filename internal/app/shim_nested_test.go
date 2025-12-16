@@ -26,14 +26,14 @@ func TestRepro_NestedShims(t *testing.T) {
 	// Create real toolB
 	// It prints "PATH=<path>" so we can inspect it.
 	toolB := filepath.Join(binDir, "toolB")
-	if err := os.WriteFile(toolB, []byte("#!/bin/sh\necho PATH=$PATH\n"), 0755); err != nil {
+	if err := os.WriteFile(toolB, []byte("#!/bin/sh\necho PATH=$PATH\n"), 0755); err != nil { //nolint:gosec
 		t.Fatal(err)
 	}
 
 	// Create real toolA
 	// It calls toolB
 	toolA := filepath.Join(binDir, "toolA")
-	if err := os.WriteFile(toolA, []byte("#!/bin/sh\ntoolB\n"), 0755); err != nil {
+	if err := os.WriteFile(toolA, []byte("#!/bin/sh\ntoolB\n"), 0755); err != nil { //nolint:gosec
 		t.Fatal(err)
 	}
 

@@ -13,7 +13,7 @@ func TestCheckOwnership_NormalUser(t *testing.T) {
 
 	tmp := t.TempDir()
 	db := filepath.Join(tmp, "db.sqlite")
-	if err := os.WriteFile(db, []byte(""), 0644); err != nil {
+	if err := os.WriteFile(db, []byte(""), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -35,7 +35,7 @@ func TestCheckOwnership_RootMismatch(t *testing.T) {
 
 	tmp := t.TempDir()
 	db := filepath.Join(tmp, "db.sqlite")
-	if err := os.WriteFile(db, []byte(""), 0644); err != nil {
+	if err := os.WriteFile(db, []byte(""), 0600); err != nil {
 		t.Fatal(err)
 	}
 
