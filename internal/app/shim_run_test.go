@@ -152,7 +152,6 @@ func TestRunShim_AutoExec_Disabled(t *testing.T) {
 	t.Setenv("ACKCHYUALLY_TEST_FORCE_TTY", "true")
 
 	tmp := t.TempDir()
-	tmp := t.TempDir()
 	// Script prints usage and exits 1
 	writeExec(t, tmp, "script", "#!/bin/sh\necho 'usage: script <arg>'\nexit 1", "@echo usage: script <arg>\r\n@exit /b 1")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
