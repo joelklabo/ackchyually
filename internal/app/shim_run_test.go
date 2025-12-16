@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// writeExec writes an executable script.
+// name is usually "script".
 func writeExec(t *testing.T, dir, name, contentUnix, contentWin string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
@@ -17,7 +19,7 @@ func writeExec(t *testing.T, dir, name, contentUnix, contentWin string) {
 		path += ".bat"
 		content = contentWin
 	}
-	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil { //nolint:gosec
 		t.Fatalf("write script: %v", err)
 	}
 }
