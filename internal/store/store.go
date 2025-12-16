@@ -64,6 +64,9 @@ func dataDir() string {
 func dbPath() string { return filepath.Join(dataDir(), "ackchyually.sqlite") }
 
 func Open() (*DB, error) {
+	if err := checkOwnership(dbPath()); err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(dataDir(), 0o755); err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ import (
 
 func runPipes(exe string, args []string) (Result, error) {
 	cmd := exec.CommandContext(context.Background(), exe, args...)
+	cmd.Env = SanitizedEnv()
 	cmd.Stdin = os.Stdin
 
 	outTail := NewTail(64 * 1024)

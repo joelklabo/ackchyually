@@ -16,6 +16,7 @@ import (
 
 func runPTY(exe string, args []string) (Result, error) {
 	cmd := exec.CommandContext(context.Background(), exe, args...)
+	cmd.Env = SanitizedEnv()
 
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
