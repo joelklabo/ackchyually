@@ -7,6 +7,7 @@ import (
 
 func TestRunCLI_ShimDispatch(t *testing.T) {
 	setTempHomeAndCWD(t)
+	t.Setenv("PATH", "")
 
 	// We just want to ensure dispatch works, so we expect exit codes consistent with empty/invalid args
 	// or successful execution if no args needed.
@@ -24,7 +25,7 @@ func TestRunCLI_ShimDispatch(t *testing.T) {
 		{[]string{"integrate", "status"}, 0, "codex:"},
 		{[]string{"integrate", "codex", "--dry-run"}, 0, "codex:"},
 		{[]string{"integrate", "claude", "--dry-run"}, 0, "claude:"},
-		{[]string{"integrate", "verify"}, 2, "not implemented"},
+		{[]string{"integrate", "verify"}, 0, "codex: not installed"},
 		{[]string{"version"}, 0, ""}, // ok
 	}
 

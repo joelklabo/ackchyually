@@ -124,8 +124,13 @@ func integrateTool(tool string, args []string) int {
 
 func integrateVerify(args []string) int {
 	fs := flag.NewFlagSet("integrate verify", flag.ContinueOnError)
-	_ = fs.Bool("json", false, "output JSON (not yet implemented)")
+	jsonOut := fs.Bool("json", false, "output JSON (not yet implemented)")
 	if err := parseFlags(fs, args); err != nil {
+		return 2
+	}
+
+	if *jsonOut {
+		fmt.Fprintln(os.Stderr, "integrate verify: --json not implemented yet")
 		return 2
 	}
 
@@ -133,15 +138,7 @@ func integrateVerify(args []string) int {
 	if fs.NArg() > 0 {
 		target = fs.Arg(0)
 	}
-	switch target {
-	case "all", "codex", "claude", "copilot":
-	default:
-		fmt.Fprintf(os.Stderr, "integrate verify: unknown target %q\n", target)
-		return 2
-	}
-
-	fmt.Fprintf(os.Stderr, "integrate verify %s: not implemented yet\n", target)
-	return 2
+	return integrateVerifyImpl(target)
 }
 
 func integrateCodex(dryRun, undo bool) int {
