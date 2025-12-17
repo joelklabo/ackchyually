@@ -123,6 +123,21 @@ fix: something
 - Logs invocations to a local SQLite DB (redacted) keyed by repo/cwd context (`~/.local/share/ackchyually/ackchyually.sqlite`).
 - On “usage-ish” failures, prints one known-good command that worked before in the same context.
 
+## Agent CLI compatibility (Codex CLI / Claude Code / gh-copilot)
+`ackchyually` works with agent CLIs as long as they execute tools via your `PATH` (i.e., they run `git`, not `/usr/bin/git`).
+
+Quick self-check inside the agent session:
+```sh
+which git
+# should be: ~/.local/share/ackchyually/shims/git
+```
+
+- **Codex CLI**: Codex can filter which environment variables are passed to command execution. Ensure `PATH` and `HOME` are included (see Codex `shell_environment_policy`: https://developers.openai.com/codex/configuration). If you use Codex’s PTY-backed exec, interactive behavior is preserved end-to-end.
+- **Claude Code**: ensure the agent inherits your `PATH`, or set it explicitly via `~/.claude/settings.json` `env` (docs: https://docs.anthropic.com/en/docs/claude-code/settings).
+- **gh-copilot**: `gh copilot` suggests commands; when you execute them in your shell, `ackchyually` sees them like any other command (docs: https://docs.github.com/en/copilot/github-copilot-in-the-cli).
+
+Automated check (POSIX): `just test-agent` (or `go test ./... -run TestAgentCLI -count=1`)
+
 ## Commands
 - `ackchyually shim install <tool...>`
 - `ackchyually shim list`

@@ -12,6 +12,9 @@ test:
 test-pty:
   go test ./... -run TestPTY -count=1
 
+test-agent:
+  go test ./... -run TestAgentCLI -count=1
+
 cover:
   go test ./... -coverprofile=coverage.out -covermode=atomic
   go tool cover -func=coverage.out | tail -n 1

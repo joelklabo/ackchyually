@@ -67,7 +67,7 @@ func bestImpl(tool, query string) int {
 
 	sort.Slice(scoredList, func(i, j int) bool { return scoredList[i].Score > scoredList[j].Score })
 
-	n := 5
+	n := 100
 	if len(scoredList) < n {
 		n = len(scoredList)
 	}

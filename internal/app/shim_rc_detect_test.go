@@ -1,20 +1,23 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 )
 
 func TestShellRCCandidates(t *testing.T) {
-	home := "/home/user"
+	join := filepath.Join
+	home := join("home", "user")
+
 	t.Setenv("HOME", home)
 
 	tests := []struct {
 		shell string
 		want  []string
 	}{
-		{"zsh", []string{"/home/user/.zshrc", "/home/user/.zprofile", "/home/user/.zshenv"}},
-		{"bash", []string{"/home/user/.bashrc", "/home/user/.bash_profile", "/home/user/.bash_login", "/home/user/.profile"}},
-		{"fish", []string{"/home/user/.config/fish/config.fish", "/home/user/.config/fish/conf.d/ackchyually.fish"}},
+		{"zsh", []string{join(home, ".zshrc"), join(home, ".zprofile"), join(home, ".zshenv")}},
+		{"bash", []string{join(home, ".bashrc"), join(home, ".bash_profile"), join(home, ".bash_login"), join(home, ".profile")}},
+		{"fish", []string{join(home, ".config", "fish", "config.fish"), join(home, ".config", "fish", "conf.d", "ackchyually.fish")}},
 	}
 
 	for _, tt := range tests {
