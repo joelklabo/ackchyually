@@ -86,6 +86,7 @@ func runShim(tool string, args []string, allowAutoExec bool) int {
 		suggestKnownGood(tool, ctxKey, argvSafe)
 	}
 
+	maybePrintAgentCLIHint(time.Now())
 	return res.ExitCode
 }
 

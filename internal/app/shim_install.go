@@ -119,17 +119,18 @@ func shimDoctor() int { //nolint:gocyclo
 	fmt.Printf("db:       %s\n", dbPath)
 	fmt.Println()
 
-	hasAckchyuallyShim := false
+	exitCode := 0
+
 	entries, err := os.ReadDir(shimDir)
-	switch {
-	case err != nil:
+	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("installed shims: (none)")
-			return 0
+		} else {
+			fmt.Fprintln(os.Stderr, "ackchyually:", err)
+			exitCode = 1
 		}
-		fmt.Fprintln(os.Stderr, "ackchyually:", err)
-		return 1
-	default:
+	} else {
+		hasAckchyuallyShim := false
 		names := make([]string, 0, len(entries))
 		for _, e := range entries {
 			name := e.Name()
@@ -146,120 +147,124 @@ func shimDoctor() int { //nolint:gocyclo
 
 		if len(names) == 0 {
 			fmt.Println("installed shims: (none)")
-			return 0
-		}
+		} else {
+			ok := true
+			var details []string
+			var inactive []string
+			var broken []string
+			var missingReal []string
 
-		ok := true
-		var details []string
-		var inactive []string
-		var broken []string
-		var missingReal []string
-
-		if hasAckchyuallyShim {
-			fmt.Println("note:    shim dir contains 'ackchyually' (not needed)")
-			fmt.Println("         remove: ackchyually shim uninstall ackchyually")
-			fmt.Println()
-		}
-
-		fmt.Printf("installed shims: %s\n", strings.Join(names, ", "))
-
-		for _, name := range names {
-			dst := filepath.Join(shimDir, name)
-
-			info, err := os.Lstat(dst)
-			if err != nil {
-				ok = false
-				broken = append(broken, name)
-				details = append(details, fmt.Sprintf("%s: stat failed", name))
-				continue
-			}
-			if info.Mode()&os.ModeSymlink == 0 {
-				ok = false
-				broken = append(broken, name)
-				details = append(details, fmt.Sprintf("%s: not a symlink (expected symlink to ackchyually)", name))
-				continue
+			if hasAckchyuallyShim {
+				fmt.Println("note:    shim dir contains 'ackchyually' (not needed)")
+				fmt.Println("         remove: ackchyually shim uninstall ackchyually")
+				fmt.Println()
 			}
 
-			target, err := os.Readlink(dst)
-			if err != nil {
-				ok = false
-				broken = append(broken, name)
-				details = append(details, fmt.Sprintf("%s: readlink failed", name))
-				continue
-			}
-			if !filepath.IsAbs(target) {
-				target = filepath.Join(filepath.Dir(dst), target)
-			}
-			target = filepath.Clean(target)
+			fmt.Printf("installed shims: %s\n", strings.Join(names, ", "))
 
-			if st, err := os.Stat(target); err != nil || st.IsDir() || st.Mode()&0o111 == 0 {
-				ok = false
-				broken = append(broken, name)
-				details = append(details, fmt.Sprintf("%s: broken shim target", name))
-				continue
-			}
+			for _, name := range names {
+				dst := filepath.Join(shimDir, name)
 
-			if _, err := execx.WhichSkippingShims(name); err != nil {
-				ok = false
-				missingReal = append(missingReal, name)
-				details = append(details, fmt.Sprintf("%s: real tool not found in PATH (excluding shims)", name))
-				continue
-			}
-
-			got, err := exec.LookPath(name)
-			active := err == nil && filepath.Clean(got) == filepath.Clean(dst)
-			if !active {
-				ok = false
-				inactive = append(inactive, name)
+				info, err := os.Lstat(dst)
 				if err != nil {
-					details = append(details, fmt.Sprintf("%s: not in PATH (expected %s)", name, dst))
-				} else {
-					details = append(details, fmt.Sprintf("%s: PATH=%s (expected %s)", name, got, dst))
+					ok = false
+					broken = append(broken, name)
+					details = append(details, fmt.Sprintf("%s: stat failed", name))
+					continue
 				}
-				continue
+				if info.Mode()&os.ModeSymlink == 0 {
+					ok = false
+					broken = append(broken, name)
+					details = append(details, fmt.Sprintf("%s: not a symlink (expected symlink to ackchyually)", name))
+					continue
+				}
+
+				target, err := os.Readlink(dst)
+				if err != nil {
+					ok = false
+					broken = append(broken, name)
+					details = append(details, fmt.Sprintf("%s: readlink failed", name))
+					continue
+				}
+				if !filepath.IsAbs(target) {
+					target = filepath.Join(filepath.Dir(dst), target)
+				}
+				target = filepath.Clean(target)
+
+				if st, err := os.Stat(target); err != nil || st.IsDir() || st.Mode()&0o111 == 0 {
+					ok = false
+					broken = append(broken, name)
+					details = append(details, fmt.Sprintf("%s: broken shim target", name))
+					continue
+				}
+
+				if _, err := execx.WhichSkippingShims(name); err != nil {
+					ok = false
+					missingReal = append(missingReal, name)
+					details = append(details, fmt.Sprintf("%s: real tool not found in PATH (excluding shims)", name))
+					continue
+				}
+
+				got, err := exec.LookPath(name)
+				active := err == nil && filepath.Clean(got) == filepath.Clean(dst)
+				if !active {
+					ok = false
+					inactive = append(inactive, name)
+					if err != nil {
+						details = append(details, fmt.Sprintf("%s: not in PATH (expected %s)", name, dst))
+					} else {
+						details = append(details, fmt.Sprintf("%s: PATH=%s (expected %s)", name, got, dst))
+					}
+					continue
+				}
+			}
+
+			if ok {
+				fmt.Printf("status:   %s (shims are active)\n", u.OK("ok"))
+			} else {
+				fmt.Println()
+				fmt.Printf("status:   %s\n", u.Warn("warn"))
+				if len(inactive) > 0 {
+					fmt.Printf("inactive: %s\n", strings.Join(inactive, ", "))
+				}
+				if len(broken) > 0 {
+					fmt.Printf("broken:   %s\n", strings.Join(broken, ", "))
+				}
+				if len(missingReal) > 0 {
+					fmt.Printf("missing:  %s\n", strings.Join(missingReal, ", "))
+				}
+
+				if len(details) > 0 {
+					fmt.Println()
+					fmt.Println(u.Bold("details:"))
+					for _, d := range details {
+						fmt.Printf("  - %s\n", d)
+					}
+				}
+
+				fmt.Println()
+				fmt.Println(u.Bold("fix:"))
+				if len(inactive) > 0 {
+					fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
+					fmt.Println("  hash -r 2>/dev/null || true")
+					fmt.Println("  # or: ackchyually shim enable")
+				}
+				if len(broken) > 0 {
+					fmt.Printf("  ackchyually shim install %s\n", strings.Join(broken, " "))
+				}
+				if len(missingReal) > 0 {
+					fmt.Printf("  # install missing tools, or: ackchyually shim uninstall %s\n", strings.Join(missingReal, " "))
+				}
+				exitCode = 1
 			}
 		}
-
-		if ok {
-			fmt.Printf("status:   %s (shims are active)\n", u.OK("ok"))
-			return 0
-		}
-
-		fmt.Println()
-		fmt.Printf("status:   %s\n", u.Warn("warn"))
-		if len(inactive) > 0 {
-			fmt.Printf("inactive: %s\n", strings.Join(inactive, ", "))
-		}
-		if len(broken) > 0 {
-			fmt.Printf("broken:   %s\n", strings.Join(broken, ", "))
-		}
-		if len(missingReal) > 0 {
-			fmt.Printf("missing:  %s\n", strings.Join(missingReal, ", "))
-		}
-
-		if len(details) > 0 {
-			fmt.Println()
-			fmt.Println(u.Bold("details:"))
-			for _, d := range details {
-				fmt.Printf("  - %s\n", d)
-			}
-		}
-
-		fmt.Println()
-		fmt.Println(u.Bold("fix:"))
-		if len(inactive) > 0 {
-			fmt.Printf("  export PATH=\"%s%c$PATH\"\n", shimDir, os.PathListSeparator)
-			fmt.Println("  hash -r 2>/dev/null || true")
-			fmt.Println("  # or: ackchyually shim enable")
-		}
-		if len(broken) > 0 {
-			fmt.Printf("  ackchyually shim install %s\n", strings.Join(broken, " "))
-		}
-		if len(missingReal) > 0 {
-			fmt.Printf("  # install missing tools, or: ackchyually shim uninstall %s\n", strings.Join(missingReal, " "))
-		}
-		return 1
 	}
+
+	fmt.Println()
+	fmt.Println(u.Bold("Agent CLIs"))
+	_ = integrateStatus(nil) // best-effort
+
+	return exitCode
 }
 
 func shimDir() string {
