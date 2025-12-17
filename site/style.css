@@ -161,6 +161,22 @@ code, pre {
   letter-spacing: 0.06em;
 }
 
+.cmd-card__label--agent {
+  color: var(--ack-red);
+}
+
+.cmd-card--agent {
+  border: 2px solid rgba(255, 45, 45, 0.34);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.cmd-card__note {
+  margin: 10px 0 0;
+  color: var(--ack-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .cmd-card pre {
   margin: 0;
   overflow: auto;

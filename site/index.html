@@ -64,6 +64,27 @@
           wrong.
         </p>
 
+        <div class="cmd-card cmd-card--agent" aria-label="agents" style="margin-bottom: 1rem;">
+          <div class="cmd-card__label cmd-card__label--agent">Agent CLIs (Codex / Claude / Copilot)</div>
+          <div class="cmd-card__row">
+            <pre><code id="agent-onboarding">ackchyually shim install git gh bd xcodebuild
+ackchyually integrate all
+ackchyually integrate verify codex</code></pre>
+            <button
+              class="btn btn-secondary btn-small copy-btn"
+              type="button"
+              data-copy-target="#agent-onboarding"
+              aria-label="Copy agent onboarding commands"
+            >
+              Copy
+            </button>
+          </div>
+          <p class="cmd-card__note">
+            Supported versions: Codex CLI (<code>codex</code>) ≥ 0.0.0 • Claude Code (<code>claude</code>) ≥ 0.0.0 • Copilot CLI
+            (<code>copilot</code>) ≥ 0.0.0
+          </p>
+        </div>
+
         <div class="cmd-card" aria-label="install">
           <div class="cmd-card__label">macOS / Linux</div>
           <div class="cmd-card__row">
@@ -102,7 +123,7 @@
       <section>
         <h2 class="h2">Install Shims</h2>
         <div class="cmd-card">
-          <pre><code>ackchyually shim install git gh xcodebuild</code></pre>
+          <pre><code>ackchyually shim install git gh bd xcodebuild</code></pre>
         </div>
       </section>
 
