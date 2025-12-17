@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/joelklabo/ackchyually/internal/execx"
+	"github.com/joelklabo/ackchyually/internal/integrations/claude"
 	"github.com/joelklabo/ackchyually/internal/integrations/codex"
 )
 
@@ -43,13 +44,20 @@ func integrateStatus(args []string) int {
 
 	shimDir := execx.ShimDir()
 
-	st, err := codex.DetectStatus(context.Background(), "", shimDir)
+	codexSt, err := codex.DetectStatus(context.Background(), "", shimDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "integrate status: codex: %v\n", err)
 		return 1
 	}
 
-	printCodexStatus(st)
+	claudeSt, err := claude.DetectStatus(context.Background(), "", shimDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "integrate status: claude: %v\n", err)
+		return 1
+	}
+
+	printCodexStatus(codexSt)
+	printClaudeStatus(claudeSt)
 	return 0
 }
 
@@ -64,6 +72,8 @@ func integrateTool(tool string, args []string) int {
 	switch tool {
 	case "codex":
 		return integrateCodex(*dryRun, *undo)
+	case "claude":
+		return integrateClaude(*dryRun, *undo)
 	default:
 		fmt.Fprintf(os.Stderr, "integrate %s: not implemented yet\n", tool)
 		return 2
@@ -117,6 +127,31 @@ func printCodexStatus(st codex.Status) {
 	fmt.Printf("codex: installed=%s version=%s integrated=%s config=%s\n", installed, version, integrated, config)
 }
 
+func printClaudeStatus(st claude.Status) {
+	installed := "no"
+	if st.Installed {
+		installed = "yes"
+	}
+	version := st.Version
+	switch {
+	case !st.Installed:
+		version = "-"
+	case version == "":
+		version = "?"
+	}
+
+	integrated := "no"
+	if st.Integrated {
+		integrated = "yes"
+	}
+	settings := st.SettingsPath
+	if !st.SettingsExists {
+		settings += " (missing)"
+	}
+
+	fmt.Printf("claude: installed=%s version=%s integrated=%s settings=%s\n", installed, version, integrated, settings)
+}
+
 func integrateCodex(dryRun, undo bool) int {
 	if undo {
 		plan, err := codex.PlanUndo("")
@@ -159,5 +194,50 @@ func integrateCodex(dryRun, undo bool) int {
 		return 1
 	}
 	fmt.Printf("codex: integrated (wrote %s)\n", plan.Path)
+	return 0
+}
+
+func integrateClaude(dryRun, undo bool) int {
+	if undo {
+		plan, err := claude.PlanUndo("")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "integrate claude: %v\n", err)
+			return 1
+		}
+		if !plan.Changed {
+			fmt.Println("claude: nothing to undo")
+			return 0
+		}
+		if dryRun {
+			fmt.Printf("claude: would undo changes in %s\n", plan.Path)
+			return 0
+		}
+		if err := claude.Apply(plan); err != nil {
+			fmt.Fprintf(os.Stderr, "integrate claude: %v\n", err)
+			return 1
+		}
+		fmt.Printf("claude: undo applied to %s\n", plan.Path)
+		return 0
+	}
+
+	shimDir := execx.ShimDir()
+	plan, err := claude.PlanIntegrate("", shimDir, os.Getenv("PATH"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "integrate claude: %v\n", err)
+		return 1
+	}
+	if !plan.Changed {
+		fmt.Println("claude: already integrated")
+		return 0
+	}
+	if dryRun {
+		fmt.Printf("claude: would update %s\n", plan.Path)
+		return 0
+	}
+	if err := claude.Apply(plan); err != nil {
+		fmt.Fprintf(os.Stderr, "integrate claude: %v\n", err)
+		return 1
+	}
+	fmt.Printf("claude: integrated (wrote %s)\n", plan.Path)
 	return 0
 }
