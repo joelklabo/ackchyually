@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "id": "codex",
+      "binary": "codex",
+      "npm_package": "@openai/codex",
+      "supported_range": {
+        "min_inclusive": "0.0.0",
+        "max_exclusive": ""
+      },
+      "ci_tested_versions": [],
+      "docs_url": "https://developers.openai.com/codex/cli/reference"
+    },
+    {
+      "id": "claude",
+      "binary": "claude",
+      "npm_package": "@anthropic-ai/claude-code",
+      "supported_range": {
+        "min_inclusive": "0.0.0",
+        "max_exclusive": ""
+      },
+      "ci_tested_versions": [],
+      "docs_url": "https://docs.anthropic.com/en/docs/claude-code/settings"
+    },
+    {
+      "id": "copilot",
+      "binary": "copilot",
+      "npm_package": "@github/copilot",
+      "supported_range": {
+        "min_inclusive": "0.0.0",
+        "max_exclusive": ""
+      },
+      "ci_tested_versions": [],
+      "docs_url": "https://docs.github.com/en/copilot/how-tos/use-copilot-in-the-cli"
+    }
+  ]
+}
+
