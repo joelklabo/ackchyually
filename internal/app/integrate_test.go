@@ -20,7 +20,15 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 
 func TestIntegrate_Codex_DryRunDoesNotWriteConfig(t *testing.T) {
 	setTempHomeAndCWD(t)
-	t.Setenv("PATH", "/usr/bin")
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"codex",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"codex 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho codex 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
 
 	cfg, err := codex.DefaultConfigPath()
 	if err != nil {
@@ -51,7 +59,15 @@ func TestIntegrate_Codex_DryRunDoesNotWriteConfig(t *testing.T) {
 
 func TestIntegrate_Codex_StatusApplyUndo(t *testing.T) {
 	setTempHomeAndCWD(t)
-	t.Setenv("PATH", "/usr/bin")
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"codex",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"codex 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho codex 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
 
 	code, out, errOut := captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "status"})
@@ -65,6 +81,9 @@ func TestIntegrate_Codex_StatusApplyUndo(t *testing.T) {
 	}
 	if !strings.Contains(codexLine, "integrated=no") {
 		t.Fatalf("expected integrated=no before integration, got:\n%s", codexLine)
+	}
+	if !strings.Contains(out, "fix: ackchyually integrate codex") {
+		t.Fatalf("expected fix command before integration, got:\n%s", out)
 	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
@@ -87,6 +106,9 @@ func TestIntegrate_Codex_StatusApplyUndo(t *testing.T) {
 	if !strings.Contains(codexLine, "integrated=yes") {
 		t.Fatalf("expected integrated=yes after integration, got:\n%s", codexLine)
 	}
+	if strings.Contains(out, "fix: ackchyually integrate codex") {
+		t.Fatalf("did not expect fix command after integration, got:\n%s", out)
+	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "codex", "--undo"})
@@ -108,11 +130,22 @@ func TestIntegrate_Codex_StatusApplyUndo(t *testing.T) {
 	if !strings.Contains(codexLine, "integrated=no") {
 		t.Fatalf("expected integrated=no after undo, got:\n%s", codexLine)
 	}
+	if !strings.Contains(out, "fix: ackchyually integrate codex") {
+		t.Fatalf("expected fix command after undo, got:\n%s", out)
+	}
 }
 
 func TestIntegrate_Claude_DryRunDoesNotWriteSettings(t *testing.T) {
 	setTempHomeAndCWD(t)
-	t.Setenv("PATH", "/usr/bin")
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"claude",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"claude 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho claude 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
 
 	settings, err := claude.DefaultSettingsPath()
 	if err != nil {
@@ -143,7 +176,15 @@ func TestIntegrate_Claude_DryRunDoesNotWriteSettings(t *testing.T) {
 
 func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 	setTempHomeAndCWD(t)
-	t.Setenv("PATH", "/usr/bin")
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"claude",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"claude 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho claude 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
 
 	code, out, errOut := captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "status"})
@@ -157,6 +198,9 @@ func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 	}
 	if !strings.Contains(claudeLine, "integrated=no") {
 		t.Fatalf("expected integrated=no before integration, got:\n%s", claudeLine)
+	}
+	if !strings.Contains(out, "fix: ackchyually integrate claude") {
+		t.Fatalf("expected fix command before integration, got:\n%s", out)
 	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
@@ -179,6 +223,9 @@ func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 	if !strings.Contains(claudeLine, "integrated=yes") {
 		t.Fatalf("expected integrated=yes after integration, got:\n%s", claudeLine)
 	}
+	if strings.Contains(out, "fix: ackchyually integrate claude") {
+		t.Fatalf("did not expect fix command after integration, got:\n%s", out)
+	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "claude", "--undo"})
@@ -199,6 +246,9 @@ func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 	}
 	if !strings.Contains(claudeLine, "integrated=no") {
 		t.Fatalf("expected integrated=no after undo, got:\n%s", claudeLine)
+	}
+	if !strings.Contains(out, "fix: ackchyually integrate claude") {
+		t.Fatalf("expected fix command after undo, got:\n%s", out)
 	}
 }
 
@@ -228,6 +278,9 @@ func TestIntegrate_Copilot_StatusApplyUndo(t *testing.T) {
 	if !strings.Contains(copilotLine, "integrated=no") {
 		t.Fatalf("expected integrated=no before integration, got:\n%s", copilotLine)
 	}
+	if !strings.Contains(out, "fix: ackchyually integrate copilot") {
+		t.Fatalf("expected fix command before integration, got:\n%s", out)
+	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "copilot"})
@@ -249,6 +302,9 @@ func TestIntegrate_Copilot_StatusApplyUndo(t *testing.T) {
 	if !strings.Contains(copilotLine, "integrated=yes") {
 		t.Fatalf("expected integrated=yes after integration, got:\n%s", copilotLine)
 	}
+	if strings.Contains(out, "fix: ackchyually integrate copilot") {
+		t.Fatalf("did not expect fix command after integration, got:\n%s", out)
+	}
 
 	code, out, errOut = captureStdoutStderr(t, func() int {
 		return RunCLI([]string{"integrate", "copilot", "--undo"})
@@ -269,5 +325,8 @@ func TestIntegrate_Copilot_StatusApplyUndo(t *testing.T) {
 	}
 	if !strings.Contains(copilotLine, "integrated=no") {
 		t.Fatalf("expected integrated=no after undo, got:\n%s", copilotLine)
+	}
+	if !strings.Contains(out, "fix: ackchyually integrate copilot") {
+		t.Fatalf("expected fix command after undo, got:\n%s", out)
 	}
 }
