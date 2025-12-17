@@ -21,8 +21,8 @@ func TestRunCLI_ShimDispatch(t *testing.T) {
 		{[]string{"shim", "list"}, 0, ""},      // ok
 		{[]string{"shim", "doctor"}, 0, ""},    // ok
 		{[]string{"shim", "enable"}, 0, ""},    // ok (idempotent/safe)
-		{[]string{"integrate", "status"}, 2, "not implemented"},
-		{[]string{"integrate", "codex", "--dry-run"}, 2, "not implemented"},
+		{[]string{"integrate", "status"}, 0, "codex:"},
+		{[]string{"integrate", "codex", "--dry-run"}, 0, "codex:"},
 		{[]string{"integrate", "verify"}, 2, "not implemented"},
 		{[]string{"version"}, 0, ""}, // ok
 	}
