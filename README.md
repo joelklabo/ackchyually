@@ -146,6 +146,7 @@ Notes:
   - Codex CLI configuration (`shell_environment_policy`, config file): https://developers.openai.com/codex/configuration
   - Claude Code settings (`~/.claude/settings.json`): https://docs.anthropic.com/en/docs/claude-code/settings
   - Copilot CLI: https://docs.github.com/en/copilot/how-tos/use-copilot-in-the-cli
+- Troubleshooting: `docs/agent_cli_troubleshooting.md`
 
 Supported versions (from `internal/integrations/agentclis/supported_versions.json`):
 - Codex CLI (`codex`, npm `@openai/codex`): `>= 0.0.0`
