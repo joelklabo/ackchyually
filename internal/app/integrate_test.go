@@ -2,9 +2,11 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/joelklabo/ackchyually/internal/execx"
 	"github.com/joelklabo/ackchyually/internal/integrations/claude"
 	"github.com/joelklabo/ackchyually/internal/integrations/codex"
 )
@@ -249,6 +251,55 @@ func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 	}
 	if !strings.Contains(out, "fix: ackchyually integrate claude") {
 		t.Fatalf("expected fix command after undo, got:\n%s", out)
+	}
+}
+
+func TestIntegrate_Status_ScanLogs(t *testing.T) {
+	setTempHomeAndCWD(t)
+
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"codex",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"codex 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho codex 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = os.Getenv("HOME")
+	}
+	shimDir := execx.ShimDir()
+
+	codexDir := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(codexDir, 0o755); err != nil {
+		t.Fatalf("mkdir codex dir: %v", err)
+	}
+	history := filepath.Join(codexDir, "history.jsonl")
+	logContent := "DO_NOT_PRINT /usr/bin/git status\n" + filepath.Join(shimDir, "git") + "\n"
+	if err := os.WriteFile(history, []byte(logContent), 0o600); err != nil { //nolint:gosec
+		t.Fatalf("write history: %v", err)
+	}
+
+	code, out, errOut := captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "status", "--scan-logs", "--scan-max-files", "10", "--scan-max-bytes", "1024"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate status --scan-logs returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+	if strings.Contains(out, "DO_NOT_PRINT") {
+		t.Fatalf("expected log contents to be suppressed, got:\n%s", out)
+	}
+	if !strings.Contains(out, "log scan") || !strings.Contains(out, "scan: codex:") {
+		t.Fatalf("expected scan summary output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "shim_refs=yes") || !strings.Contains(out, "abs_git_refs=yes") {
+		t.Fatalf("expected shim and abs refs to be reported, got:\n%s", out)
+	}
+	if !strings.Contains(out, "~/.codex/history.jsonl") {
+		t.Fatalf("expected home-relativized filename, got:\n%s", out)
 	}
 }
 

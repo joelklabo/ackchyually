@@ -9,6 +9,7 @@ import (
 
 	"github.com/joelklabo/ackchyually/internal/execx"
 	"github.com/joelklabo/ackchyually/internal/integrations/agentclis"
+	"github.com/joelklabo/ackchyually/internal/integrations/agentclis/logscan"
 	"github.com/joelklabo/ackchyually/internal/integrations/claude"
 	"github.com/joelklabo/ackchyually/internal/integrations/codex"
 	"github.com/joelklabo/ackchyually/internal/integrations/copilot"
@@ -36,6 +37,9 @@ func integrateCmd(args []string) int {
 func integrateStatus(args []string) int {
 	fs := flag.NewFlagSet("integrate status", flag.ContinueOnError)
 	jsonOut := fs.Bool("json", false, "output JSON (not yet implemented)")
+	scanLogs := fs.Bool("scan-logs", false, "scan local agent logs for evidence of shim vs absolute tool paths")
+	scanMaxFiles := fs.Int("scan-max-files", 20, "max files to scan per tool")
+	scanMaxBytes := fs.Int64("scan-max-bytes", 1<<20, "max bytes to read from each file (tail read)")
 	if err := parseFlags(fs, args); err != nil {
 		return 2
 	}
@@ -98,6 +102,21 @@ func integrateStatus(args []string) int {
 		LocationValue: fallbackDash(copilotSt.WrapperPath),
 		FixCommand:    maybeFixCommand("copilot", copilotSt.Installed, copilotSt.Integrated),
 	})
+
+	if *scanLogs {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			home = os.Getenv("HOME")
+		}
+
+		opts := logscan.Options{MaxFiles: *scanMaxFiles, MaxBytes: *scanMaxBytes}
+
+		fmt.Println()
+		fmt.Println("log scan (best-effort; no raw log lines printed):")
+		printLogScanSummary(logscan.ScanCodex(home, shimDir, opts))
+		printLogScanSummary(logscan.ScanCopilot(home, shimDir, opts))
+	}
+
 	return 0
 }
 
@@ -380,6 +399,25 @@ func fallbackDash(path string) string {
 		return "-"
 	}
 	return path
+}
+
+func printLogScanSummary(sum logscan.Summary) {
+	shim := "no"
+	if sum.FoundShim() {
+		shim = "yes"
+	}
+	abs := "no"
+	if sum.FoundAbs() {
+		abs = "yes"
+	}
+
+	fmt.Printf("scan: %s: files=%d shim_refs=%s abs_git_refs=%s errors=%d bytes=%d\n", sum.Tool, sum.FilesScanned, shim, abs, sum.FilesErrored, sum.BytesRead)
+	if len(sum.FileNames) > 0 {
+		fmt.Println("  files:")
+		for _, name := range sum.FileNames {
+			fmt.Printf("    - %s\n", name)
+		}
+	}
 }
 
 func formatSupportedRange(r agentclis.Range) string {

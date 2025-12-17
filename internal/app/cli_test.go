@@ -64,6 +64,7 @@ func setTempHomeAndCWD(t *testing.T) string {
 	mkdirAll(t, cwd)
 
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 
 	oldCwd, err := os.Getwd()
 	if err != nil {
