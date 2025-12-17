@@ -123,20 +123,36 @@ fix: something
 - Logs invocations to a local SQLite DB (redacted) keyed by repo/cwd context (`~/.local/share/ackchyually/ackchyually.sqlite`).
 - On “usage-ish” failures, prints one known-good command that worked before in the same context.
 
-## Agent CLI compatibility (Codex CLI / Claude Code / gh-copilot)
-`ackchyually` works with agent CLIs as long as they execute tools via your `PATH` (i.e., they run `git`, not `/usr/bin/git`).
+## Integrate with agents (Codex CLI / Claude Code / Copilot CLI)
+If you use an agent CLI that runs tools like `git`/`gh`/`bd` via your `PATH`, integrate it so the agent hits the ackchyually shims automatically (no shell rc edits).
 
-Quick self-check inside the agent session:
 ```sh
-which git
-# should be: ~/.local/share/ackchyually/shims/git
+ackchyually shim install git gh bd xcodebuild
+ackchyually integrate all
+ackchyually integrate status
+ackchyually integrate verify all
 ```
 
-- **Codex CLI**: Codex can filter which environment variables are passed to command execution. Ensure `PATH` and `HOME` are included (see Codex `shell_environment_policy`: https://developers.openai.com/codex/configuration). If you use Codex’s PTY-backed exec, interactive behavior is preserved end-to-end.
-- **Claude Code**: ensure the agent inherits your `PATH`, or set it explicitly via `~/.claude/settings.json` `env` (docs: https://docs.anthropic.com/en/docs/claude-code/settings).
-- **gh-copilot**: `gh copilot` suggests commands; when you execute them in your shell, `ackchyually` sees them like any other command (docs: https://docs.github.com/en/copilot/github-copilot-in-the-cli).
+30-second verification checklist (inside the agent session):
+```sh
+which git
+git --version
+ackchyually best --tool git
+```
 
-Automated check (POSIX): `just test-agent` (or `go test ./... -run TestAgentCLI -count=1`)
+Notes:
+- This only works when the agent executes tools by name (e.g. `git`), not by absolute path (e.g. `/usr/bin/git`).
+- Docs:
+  - Codex CLI configuration (`shell_environment_policy`, config file): https://developers.openai.com/codex/configuration
+  - Claude Code settings (`~/.claude/settings.json`): https://docs.anthropic.com/en/docs/claude-code/settings
+  - Copilot CLI: https://docs.github.com/en/copilot/how-tos/use-copilot-in-the-cli
+
+Supported versions (from `internal/integrations/agentclis/supported_versions.json`):
+- Codex CLI (`codex`, npm `@openai/codex`): `>= 0.0.0`
+- Claude Code (`claude`, npm `@anthropic-ai/claude-code`): `>= 0.0.0`
+- Copilot CLI (`copilot`, npm `@github/copilot`): `>= 0.0.0`
+
+Automated check (POSIX): `just test-agent` (or `go test ./... -run TestAgentCLI -count=1`).
 
 ## Commands
 - `ackchyually shim install <tool...>`
@@ -144,6 +160,8 @@ Automated check (POSIX): `just test-agent` (or `go test ./... -run TestAgentCLI 
 - `ackchyually shim enable`
 - `ackchyually shim uninstall <tool...>`
 - `ackchyually shim doctor`
+- `ackchyually integrate all|status|verify [codex|claude|copilot|all]`
+- `ackchyually integrate codex|claude|copilot [--dry-run] [--undo]`
 - `ackchyually best --tool <tool> "<query>"`
 - `ackchyually tag add "<tag>" -- <command...>`
 - `ackchyually tag run "<tag>"`
