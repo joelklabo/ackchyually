@@ -30,6 +30,17 @@ jobs:
         if: runner.os != 'Windows'
         run: diff -u scripts/install.sh site/install.sh
 
+      - name: Setup Node (agent CLIs)
+        if: runner.os != 'Windows'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install agent CLIs (auth-free)
+        if: runner.os != 'Windows'
+        run: scripts/ci/install_agent_clis.sh
+
       - name: Test (with coverage on ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: go test ./... -coverprofile=coverage.out -covermode=atomic
@@ -41,6 +52,10 @@ jobs:
       - name: PTY integration tests
         if: runner.os != 'Windows'
         run: go test ./... -run TestPTY -count=1
+
+      - name: Agent CLI smoke (auth-free)
+        if: runner.os != 'Windows'
+        run: scripts/ci/agent_cli_smoke.sh
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && github.event_name == 'push'
