@@ -9,6 +9,7 @@ import (
 	"github.com/joelklabo/ackchyually/internal/execx"
 	"github.com/joelklabo/ackchyually/internal/integrations/claude"
 	"github.com/joelklabo/ackchyually/internal/integrations/codex"
+	"github.com/joelklabo/ackchyually/internal/integrations/copilot"
 )
 
 func integrateCmd(args []string) int {
@@ -56,8 +57,15 @@ func integrateStatus(args []string) int {
 		return 1
 	}
 
+	copilotSt, err := copilot.DetectStatus(context.Background(), shimDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "integrate status: copilot: %v\n", err)
+		return 1
+	}
+
 	printCodexStatus(codexSt)
 	printClaudeStatus(claudeSt)
+	printCopilotStatus(copilotSt)
 	return 0
 }
 
@@ -74,6 +82,8 @@ func integrateTool(tool string, args []string) int {
 		return integrateCodex(*dryRun, *undo)
 	case "claude":
 		return integrateClaude(*dryRun, *undo)
+	case "copilot":
+		return integrateCopilot(*dryRun, *undo)
 	default:
 		fmt.Fprintf(os.Stderr, "integrate %s: not implemented yet\n", tool)
 		return 2
@@ -239,5 +249,79 @@ func integrateClaude(dryRun, undo bool) int {
 		return 1
 	}
 	fmt.Printf("claude: integrated (wrote %s)\n", plan.Path)
+	return 0
+}
+
+func printCopilotStatus(st copilot.Status) {
+	installed := "no"
+	if st.Installed {
+		installed = "yes"
+	}
+	version := st.Version
+	switch {
+	case !st.Installed:
+		version = "-"
+	case version == "":
+		version = "?"
+	}
+
+	integrated := "no"
+	if st.Integrated {
+		integrated = "yes"
+	}
+
+	wrapper := st.WrapperPath
+	if wrapper == "" {
+		wrapper = "-"
+	}
+
+	fmt.Printf("copilot: installed=%s version=%s integrated=%s wrapper=%s\n", installed, version, integrated, wrapper)
+}
+
+func integrateCopilot(dryRun, undo bool) int {
+	shimDir := execx.ShimDir()
+
+	var (
+		plan copilot.Plan
+		err  error
+	)
+	if undo {
+		plan, err = copilot.PlanUndo("")
+	} else {
+		plan, err = copilot.PlanInstall("", shimDir)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "integrate copilot: %v\n", err)
+		return 1
+	}
+
+	if len(plan.Actions) == 0 {
+		if undo {
+			fmt.Println("copilot: nothing to undo")
+		} else {
+			fmt.Println("copilot: already integrated")
+		}
+		return 0
+	}
+
+	if dryRun {
+		if undo {
+			fmt.Println("copilot: would undo wrapper install")
+		} else {
+			fmt.Println("copilot: would install wrapper")
+		}
+		return 0
+	}
+
+	if err := copilot.Apply(plan); err != nil {
+		fmt.Fprintf(os.Stderr, "integrate copilot: %v\n", err)
+		return 1
+	}
+
+	if undo {
+		fmt.Println("copilot: wrapper removed")
+	} else {
+		fmt.Println("copilot: wrapper installed")
+	}
 	return 0
 }

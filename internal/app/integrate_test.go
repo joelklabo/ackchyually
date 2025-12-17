@@ -201,3 +201,73 @@ func TestIntegrate_Claude_StatusApplyUndo(t *testing.T) {
 		t.Fatalf("expected integrated=no after undo, got:\n%s", claudeLine)
 	}
 }
+
+func TestIntegrate_Copilot_StatusApplyUndo(t *testing.T) {
+	setTempHomeAndCWD(t)
+
+	tmp := t.TempDir()
+	writeExec(
+		t,
+		tmp,
+		"copilot",
+		"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo \"copilot 0.0.0\"; exit 0; fi\necho ok\n",
+		"@echo off\r\nif \"%1\"==\"--version\" (\r\necho copilot 0.0.0\r\nexit /b 0\r\n)\r\necho ok\r\n",
+	)
+	t.Setenv("PATH", tmp)
+
+	code, out, errOut := captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "status"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate status returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+	copilotLine, ok := lineWithPrefix(out, "copilot:")
+	if !ok {
+		t.Fatalf("expected copilot status line, got:\n%s", out)
+	}
+	if !strings.Contains(copilotLine, "integrated=no") {
+		t.Fatalf("expected integrated=no before integration, got:\n%s", copilotLine)
+	}
+
+	code, out, errOut = captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "copilot"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate copilot returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+
+	code, out, errOut = captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "status"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate status returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+	copilotLine, ok = lineWithPrefix(out, "copilot:")
+	if !ok {
+		t.Fatalf("expected copilot status line, got:\n%s", out)
+	}
+	if !strings.Contains(copilotLine, "integrated=yes") {
+		t.Fatalf("expected integrated=yes after integration, got:\n%s", copilotLine)
+	}
+
+	code, out, errOut = captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "copilot", "--undo"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate copilot --undo returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+
+	code, out, errOut = captureStdoutStderr(t, func() int {
+		return RunCLI([]string{"integrate", "status"})
+	})
+	if code != 0 {
+		t.Fatalf("integrate status returned %d, want 0\nSTDOUT:\n%s\nSTDERR:\n%s", code, out, errOut)
+	}
+	copilotLine, ok = lineWithPrefix(out, "copilot:")
+	if !ok {
+		t.Fatalf("expected copilot status line, got:\n%s", out)
+	}
+	if !strings.Contains(copilotLine, "integrated=no") {
+		t.Fatalf("expected integrated=no after undo, got:\n%s", copilotLine)
+	}
+}
