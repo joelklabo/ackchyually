@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -13,13 +14,17 @@ func TestRunCLI_ShimDispatch(t *testing.T) {
 	tests := []struct {
 		args []string
 		code int
+		want string
 	}{
-		{[]string{"shim", "install"}, 2},   // missing args
-		{[]string{"shim", "uninstall"}, 2}, // missing args
-		{[]string{"shim", "list"}, 0},      // ok
-		{[]string{"shim", "doctor"}, 0},    // ok
-		{[]string{"shim", "enable"}, 0},    // ok (idempotent/safe)
-		{[]string{"version"}, 0},           // ok
+		{[]string{"shim", "install"}, 2, ""},   // missing args
+		{[]string{"shim", "uninstall"}, 2, ""}, // missing args
+		{[]string{"shim", "list"}, 0, ""},      // ok
+		{[]string{"shim", "doctor"}, 0, ""},    // ok
+		{[]string{"shim", "enable"}, 0, ""},    // ok (idempotent/safe)
+		{[]string{"integrate", "status"}, 2, "not implemented"},
+		{[]string{"integrate", "codex", "--dry-run"}, 2, "not implemented"},
+		{[]string{"integrate", "verify"}, 2, "not implemented"},
+		{[]string{"version"}, 0, ""}, // ok
 	}
 
 	for _, tt := range tests {
@@ -28,11 +33,14 @@ func TestRunCLI_ShimDispatch(t *testing.T) {
 			name = tt.args[1]
 		}
 		t.Run(name, func(t *testing.T) {
-			code, _, _ := captureStdoutStderr(t, func() int {
+			code, out, errOut := captureStdoutStderr(t, func() int {
 				return RunCLI(tt.args)
 			})
 			if code != tt.code {
 				t.Errorf("RunCLI(%v) code = %d, want %d", tt.args, code, tt.code)
+			}
+			if tt.want != "" && !strings.Contains(out+errOut, tt.want) {
+				t.Errorf("RunCLI(%v) output missing %q\nSTDOUT:\n%s\nSTDERR:\n%s", tt.args, tt.want, out, errOut)
 			}
 		})
 	}

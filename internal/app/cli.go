@@ -29,11 +29,13 @@ func runCLI(args []string) int {
 		return tagCmd(args[1:])
 	case "export":
 		return exportCmd(args[1:])
+	case "integrate":
+		return integrateCmd(args[1:])
 	case "version":
 		printVersion()
 		return 0
 	default:
-		printUnknownCommand(args[0], []string{"shim", "best", "tag", "export", "version"})
+		printUnknownCommand(args[0], []string{"shim", "best", "tag", "export", "integrate", "version"})
 		return 2
 	}
 }
@@ -51,6 +53,9 @@ Commands:
   tag add "<tag>" -- <command...>
   tag run "<tag>"
   export --format md|json [--tool <tool>]
+  integrate status
+  integrate codex|claude|copilot|all [--dry-run] [--undo]
+  integrate verify [codex|claude|copilot|all]
 
 Non-negotiable: PTY-first for interactive shells.
 `)
