@@ -1,0 +1,9 @@
+# Existing Codex config with inline table.
+
+[tool]
+name = "example"
+
+[shell_environment_policy]
+include_only = ["PATH", "HOME"]
+set = { PATH = "/usr/bin" }
+

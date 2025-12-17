@@ -1,0 +1,6 @@
+# include_only does not include PATH or HOME.
+
+[shell_environment_policy]
+include_only = ["LANG"]
+set = { PATH = "/usr/bin" }
+
