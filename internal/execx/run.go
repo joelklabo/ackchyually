@@ -7,7 +7,22 @@ import (
 )
 
 func IsTTY() bool {
-	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	// Check if both stdin and stdout are terminals AND we can get their state.
+	// This helps avoid "device not configured" errors when terminals are in an invalid state.
+	stdinFd := int(os.Stdin.Fd())
+	stdoutFd := int(os.Stdout.Fd())
+	
+	if !term.IsTerminal(stdinFd) || !term.IsTerminal(stdoutFd) {
+		return false
+	}
+	
+	// Verify we can actually get the terminal state before attempting PTY operations.
+	// If GetState fails, the terminal might be in an invalid state (closed/detached).
+	if _, err := term.GetState(stdinFd); err != nil {
+		return false
+	}
+	
+	return true
 }
 
 type Result struct {
