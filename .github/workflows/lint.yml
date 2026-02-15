@@ -20,6 +20,6 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.0.0
+          version: v2.1.0
           args: --config .golangci.yml
           verify: false
