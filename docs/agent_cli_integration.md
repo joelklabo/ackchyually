@@ -33,7 +33,7 @@ Provide a first-class integration command that makes tool execution inside these
 - Integrations must be:
   - Idempotent (re-running is safe)
   - Reversible (`--undo`)
-  - Safe by default (don’t leak secrets; don’t clobber user config silently)
+  - Safe by default (don't leak secrets; don't clobber user config silently)
 
 ## Proposed CLI surface
 
@@ -50,7 +50,7 @@ Conventions:
 
 - `--dry-run` prints the planned filesystem changes without writing.
 - `--undo` removes only ackchyually-managed edits; if the target file has changed unexpectedly since integration, the command refuses unless `--force` is provided.
-- `status` explains “installed / version / integrated / stale” per tool.
+- `status` explains "installed / version / integrated / stale" per tool.
 
 ## Shared implementation pieces
 
@@ -87,7 +87,7 @@ This is used by `status` and for `--undo` safety checks.
 
 ### Codex CLI (`codex`)
 
-**What we change**
+#### What we change
 
 Codex reads `~/.codex/config.toml` and supports `shell_environment_policy`, including setting explicit environment values for all spawned subprocesses (see: https://developers.openai.com/codex/local-configuration).
 
@@ -97,23 +97,23 @@ We add or modify:
   - `set.PATH = "<shimFirstPath>"`
   - If `include_only` exists, ensure it contains `PATH` and `HOME` (do not introduce `include_only` if not present to avoid breaking existing flows).
 
-**Why this works**
+#### Why this works
 
 Even if Codex filters environment variables, `shell_environment_policy.set` injects the desired `PATH` into every subprocess it launches.
 
-**Idempotence**
+#### Idempotence
 
 - Re-running sets `set.PATH` to the same computed value if unchanged.
 - We track `config_sha256_after` in integration state; if the file has changed later, we still merge safely, but `--undo` is conservative.
 
-**Undo**
+#### Undo
 
 Undo removes only ackchyually-owned changes:
 
 - If current config hash equals the recorded `config_sha256_after`, restore `config_sha256_before` by re-applying the inverse mutation (preferred), or restoring from an on-disk backup.
 - If config has changed since integration, refuse unless `--force`.
 
-**Example resulting config**
+#### Example resulting config
 
 ```toml
 [shell_environment_policy]
@@ -122,7 +122,7 @@ set = { PATH = "/Users/me/.local/share/ackchyually/shims:/opt/homebrew/bin:/usr/
 
 ### Claude Code (`claude`)
 
-**What we change**
+#### Configuration changes
 
 Claude Code supports `~/.claude/settings.json` with an `env` object applied to every session (see: https://docs.anthropic.com/en/docs/claude-code/settings).
 
@@ -132,12 +132,12 @@ We add or modify:
 
 We do not modify unrelated permissions or sandbox settings.
 
-**Undo**
+#### Rollback
 
 - If we created `env.PATH`, delete it.
 - If we overwrote an existing `env.PATH`, restore it from integration state (or refuse unless `--force` if the file has drifted).
 
-**Example resulting settings**
+#### Example resulting settings
 
 ```json
 {
@@ -149,11 +149,11 @@ We do not modify unrelated permissions or sandbox settings.
 
 ### GitHub Copilot CLI (`copilot`)
 
-**Constraints**
+#### Constraints
 
-Copilot CLI has a `config.json` file in `~/.copilot` (or under `XDG_CONFIG_HOME`) but documentation does not describe a supported “inject PATH into tool subprocesses” setting (see: https://docs.github.com/en/copilot/how-tos/use-copilot-in-the-cli).
+Copilot CLI has a `config.json` file in `~/.copilot` (or under `XDG_CONFIG_HOME`) but documentation does not describe a supported "inject PATH into tool subprocesses" setting (see: https://docs.github.com/en/copilot/how-tos/use-copilot-in-the-cli).
 
-**What we do instead**
+#### What we do instead
 
 Install a reversible wrapper *for the `copilot` executable itself* so that when the user launches Copilot CLI, it runs with a shim-first `PATH`:
 
@@ -163,9 +163,9 @@ Install a reversible wrapper *for the `copilot` executable itself* so that when 
   - Exports `PATH=shimFirstPath`
   - `exec`s `copilot.real "$@"`
 
-We only do this if `copilot` is a normal file we can move in place (or a symlink we can replace safely). If we can’t do it safely, we fall back to printing a one-time instruction (or requiring `ackchyually shim enable`).
+We only do this if `copilot` is a normal file we can move in place (or a symlink we can replace safely). If we can't do it safely, we fall back to printing a one-time instruction (or requiring `ackchyually shim enable`).
 
-**Undo**
+#### Wrapper removal
 
 - Remove wrapper and restore original binary/symlink.
 
@@ -179,7 +179,7 @@ We only do this if `copilot` is a normal file we can move in place (or a symlink
 
 ### Auth-required verification (local-only)
 
-For Claude/Copilot, full “agent runs tool and we observe shim usage” likely requires user authentication. Provide local scripts that:
+For Claude/Copilot, full "agent runs tool and we observe shim usage" likely requires user authentication. Provide local scripts that:
 
 1. Run `ackchyually integrate all`
 2. Ask the user to run one minimal agent prompt that triggers `git --version`
@@ -187,7 +187,7 @@ For Claude/Copilot, full “agent runs tool and we observe shim usage” likely 
 
 ## Staleness & proactive hints
 
-We consider an integration “stale” if any of:
+We consider an integration "stale" if any of:
 
 - Tool version differs from the recorded integrated version
 - Shim dir differs (user moved HOME)
@@ -196,6 +196,6 @@ We consider an integration “stale” if any of:
 
 When stale or missing:
 
-- `ackchyually integrate status` reports “not integrated” or “stale”.
+- `ackchyually integrate status` reports "not integrated" or "stale".
 - If we detect the agent CLIs are installed, `ackchyually` prints a rate-limited hint during normal shim usage:
-  - “Detected Codex CLI installed; run `ackchyually integrate codex` to ensure shims are used inside Codex.”
+  - "Detected Codex CLI installed; run `ackchyually integrate codex` to ensure shims are used inside Codex."
