@@ -40,6 +40,19 @@ jobs:
         if: runner.os != 'Windows'
         run: scripts/ci/install_agent_clis.sh
 
+      - name: Fix SQLite test file permissions (proactive)
+        if: runner.os != 'Windows'
+        run: |
+          # Download dependencies first to ensure SQLite module is cached
+          go mod download
+          # Fix permissions on SQLite test files in go module cache
+          for sqlite_dir in "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"*; do
+            if [ -d "$sqlite_dir" ]; then
+              find "$sqlite_dir" -type f -exec chmod 644 {} + 2>/dev/null || true
+              find "$sqlite_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
+            fi
+          done
+
       - name: Test (with coverage on ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: go test ./... -coverprofile=coverage.out -covermode=atomic
@@ -48,7 +61,18 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         run: go test ./...
 
-      - name: PTY integration tests
+      - name: Fix SQLite test file permissions (cleanup)
+        if: always() && runner.os != 'Windows'
+        run: |
+          # Fix permissions on SQLite test files in go module cache
+          for sqlite_dir in "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"*; do
+            if [ -d "$sqlite_dir" ]; then
+              find "$sqlite_dir" -type f -exec chmod 644 {} + 2>/dev/null || true
+              find "$sqlite_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
+            fi
+          done
+
+      - name: PTY-integration tests
         if: runner.os != 'Windows'
         run: go test ./... -run TestPTY -count=1
 
