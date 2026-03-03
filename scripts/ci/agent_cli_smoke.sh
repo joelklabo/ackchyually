@@ -16,8 +16,6 @@ export HOME="$tmp_home"
 echo
 echo "Using HOME=$HOME"
 
-go run ./cmd/ackchyually shim install git
-
 echo
 echo "Integrate status (before):"
 go run ./cmd/ackchyually integrate status
@@ -29,6 +27,9 @@ go run ./cmd/ackchyually integrate copilot
 echo
 echo "Integrate status (after):"
 go run ./cmd/ackchyually integrate status
+
+# Install git shim after integration to avoid temp dir issues
+go run ./cmd/ackchyually shim install git
 
 echo
 echo "Verify:"
