@@ -48,6 +48,15 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         run: go test ./...
 
+      - name: Fix SQLite test file permissions (cleanup)
+        if: always() && runner.os != 'Windows'
+        run: |
+          # Fix permissions on SQLite test files in go module cache
+          if [ -d "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* ]; then
+            find "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* -type f -exec chmod 644 {} + 2>/dev/null || true
+            find "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* -type d -exec chmod 755 {} + 2>/dev/null || true
+          fi
+
       - name: PTY integration tests
         if: runner.os != 'Windows'
         run: go test ./... -run TestPTY -count=1
