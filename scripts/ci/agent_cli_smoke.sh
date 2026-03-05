@@ -9,7 +9,9 @@ codex --version
 claude --version
 copilot --version
 
-tmp_home="$(mktemp -d)"
+# Use a temporary directory under the project root to avoid codex helper binary restrictions
+tmp_home="$(pwd)/.ci-tmp-home"
+mkdir -p "$tmp_home"
 trap 'rm -rf "$tmp_home"' EXIT
 export HOME="$tmp_home"
 
