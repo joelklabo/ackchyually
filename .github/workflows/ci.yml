@@ -52,10 +52,12 @@ jobs:
         if: always() && runner.os != 'Windows'
         run: |
           # Fix permissions on SQLite test files in go module cache
-          if [ -d "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* ]; then
-            find "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* -type f -exec chmod 644 {} + 2>/dev/null || true
-            find "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"* -type d -exec chmod 755 {} + 2>/dev/null || true
-          fi
+          for dir in "$HOME/.ci-tmp-home/go/pkg/mod/modernc.org/sqlite@"*; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type f -exec chmod 644 {} + 2>/dev/null || true
+              find "$dir" -type d -exec chmod 755 {} + 2>/dev/null || true
+            fi
+          done
 
       - name: PTY integration tests
         if: runner.os != 'Windows'
