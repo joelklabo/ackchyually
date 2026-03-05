@@ -24,7 +24,7 @@ jobs:
           set -euo pipefail
           go run ./cmd/ackchyually-eval -json > helpcount.json
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: helpcount-${{ github.run_id }}
           path: helpcount.json
@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           go run ./cmd/ackchyually-eval-toptools -json -count 250 -timeout 5s > toptools.json
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: toptools-${{ github.run_id }}
           path: toptools.json
