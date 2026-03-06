@@ -3,7 +3,7 @@ module github.com/joelklabo/ackchyually
 go 1.24.0
 
 require (
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/creack/pty v1.1.24
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
