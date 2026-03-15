@@ -1,6 +1,6 @@
 module github.com/joelklabo/ackchyually
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -8,7 +8,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/mitchellh/go-homedir v1.1.0
-	golang.org/x/mod v0.31.0
+	golang.org/x/mod v0.34.0
 	golang.org/x/term v0.40.0
 	modernc.org/sqlite v1.46.1
 )
