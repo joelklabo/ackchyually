@@ -39,7 +39,7 @@ jobs:
           printf '{"schemaVersion":1,"label":"coverage","message":"%s","color":"%s"}\n' "$pct" "$color" > site/coverage.json
       - name: Sync install script into site/
         run: cp scripts/install.sh site/install.sh
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
